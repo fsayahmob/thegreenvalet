@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* The Green Valet — Design Tokens */
+  --color-green-900: #1B4332;
+  --color-green-800: #2D6A4F;
+  --color-green-700: #40916C;
+  --color-green-600: #52B788;
+  --color-green-500: #74C69D;
+  --color-green-400: #95D5B2;
+  --color-green-300: #B7E4C7;
+  --color-green-200: #D8F3DC;
+  --color-green-100: #F0FFF4;
+  --color-green-50: #F0FFF4;
+
+  --color-gold-500: #C9A84C;
+  --color-gold-400: #D4B968;
+  --color-gold-300: #E0CA84;
+
+  --color-charcoal-900: #1A1A2E;
+  --color-charcoal-800: #2D3436;
+  --color-charcoal-700: #3D3D5C;
+  --color-charcoal-600: #636E72;
+  --color-charcoal-500: #818A91;
+  --color-charcoal-400: #A0A8AD;
+  --color-charcoal-300: #BDC3C7;
+  --color-charcoal-200: #DDE1E4;
+  --color-charcoal-100: #F1F3F5;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* shadcn/ui radius token */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* Semantic tokens — shadcn/ui compatible */
+  --radius: 0.625rem;
+  --background: #ffffff;
+  --foreground: #1A1A2E;
+
+  --card: #ffffff;
+  --card-foreground: #1A1A2E;
+
+  --popover: #ffffff;
+  --popover-foreground: #1A1A2E;
+
+  --primary: #1B4332;
+  --primary-foreground: #ffffff;
+
+  --secondary: #F0FFF4;
+  --secondary-foreground: #1B4332;
+
+  --muted: #F8F9FA;
+  --muted-foreground: #636E72;
+
+  --accent: #F0FFF4;
+  --accent-foreground: #1B4332;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #E9ECEF;
+  --input: #E9ECEF;
+  --ring: #52B788;
+
+  /* Chart tokens */
+  --chart-1: #1B4332;
+  --chart-2: #52B788;
+  --chart-3: #C9A84C;
+  --chart-4: #3D3D5C;
+  --chart-5: #74C69D;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Section spacing */
+section {
+  scroll-margin-top: 7rem;
+}
+
+/* Radix Accordion animations */
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+.animate-accordion-down {
+  animation: accordion-down 200ms ease-out;
+}
+
+.animate-accordion-up {
+  animation: accordion-up 200ms ease-out;
+}
