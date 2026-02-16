@@ -14,7 +14,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { COLLECTIONS } from "@/lib/config";
+import { COLLECTIONS, OPERATOR_STATUS_TRANSITIONS } from "@/lib/config";
 import type { Operator, OperatorStatus, PipelineProgress } from "@/lib/types";
 import { OPERATOR_PIPELINE } from "@/lib/types";
 
@@ -60,6 +60,7 @@ interface OperatorState {
   operators: Operator[];
   loading: boolean;
   error: string | null;
+  _unsubscribe: Unsubscribe | null;
 
   subscribe: () => Unsubscribe;
   createOperator: (data: Omit<Operator, "id" | "createdAt" | "updatedAt" | "pipelineProgress" | "currentStageKey" | "assignedSites">) => Promise<string>;
@@ -75,14 +76,22 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   operators: [],
   loading: true,
   error: null,
+  _unsubscribe: null,
 
   subscribe: () => {
+    const existing = get()._unsubscribe;
+    if (existing) return existing;
+
     set({ loading: true });
     const q = query(collection(db, COLLECTIONS.OPERATORS), orderBy("createdAt", "desc"));
-    return onSnapshot(q,
+    const unsubscribe = onSnapshot(q,
       (snap) => set({ operators: snap.docs.map((d) => docToOperator(d.id, d.data() as Record<string, unknown>)), loading: false, error: null }),
       (err) => set({ loading: false, error: err.message }),
     );
+
+    const wrappedUnsub = () => { unsubscribe(); set({ _unsubscribe: null }); };
+    set({ _unsubscribe: wrappedUnsub });
+    return wrappedUnsub;
   },
 
   createOperator: async (data) => {
@@ -117,6 +126,15 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   },
 
   updateStatus: async (id, status) => {
+    const operator = get().operators.find((o) => o.id === id);
+    if (operator) {
+      const allowed = OPERATOR_STATUS_TRANSITIONS[operator.status] ?? [];
+      if (!allowed.includes(status)) {
+        const msg = `Transition invalide : ${operator.status} → ${status}`;
+        set({ error: msg });
+        throw new Error(msg);
+      }
+    }
     await get().updateOperator(id, { status } as Partial<Operator>);
   },
 

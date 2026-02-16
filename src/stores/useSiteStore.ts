@@ -32,7 +32,7 @@ function docToSite(id: string, d: Record<string, unknown>): Site {
     name: (d.name as string) ?? "",
     address: (d.address as string) ?? "",
     surfaceM2: d.surfaceM2 as number | undefined,
-    assignedOperatorId: (d.assignedOperatorId as string) ?? null,
+    assignedOperatorId: (d.assignedOperatorId as string | null) ?? null,
     isActive: (d.isActive as boolean) ?? false,
     coordinates: d.coordinates as { lat: number; lng: number } | undefined,
     createdAt: ts(d.createdAt),
@@ -45,6 +45,7 @@ interface SiteState {
   sites: Site[];
   loading: boolean;
   error: string | null;
+  _unsubscribe: Unsubscribe | null;
 
   subscribe: () => Unsubscribe;
   createSite: (data: Omit<Site, "id" | "createdAt">) => Promise<string>;
@@ -57,14 +58,22 @@ export const useSiteStore = create<SiteState>((set, get) => ({
   sites: [],
   loading: true,
   error: null,
+  _unsubscribe: null,
 
   subscribe: () => {
+    const existing = get()._unsubscribe;
+    if (existing) return existing;
+
     set({ loading: true });
     const q = query(collection(db, COLLECTIONS.SITES), orderBy("createdAt", "desc"));
-    return onSnapshot(q,
+    const unsubscribe = onSnapshot(q,
       (snap) => set({ sites: snap.docs.map((d) => docToSite(d.id, d.data() as Record<string, unknown>)), loading: false, error: null }),
       (err) => set({ loading: false, error: err.message }),
     );
+
+    const wrappedUnsub = () => { unsubscribe(); set({ _unsubscribe: null }); };
+    set({ _unsubscribe: wrappedUnsub });
+    return wrappedUnsub;
   },
 
   createSite: async (data) => {
@@ -85,7 +94,7 @@ export const useSiteStore = create<SiteState>((set, get) => ({
     try {
       set({ error: null });
       const { id: _, createdAt: __, ...rest } = data as Record<string, unknown>;
-      await updateDoc(doc(db, COLLECTIONS.SITES, id), rest);
+      await updateDoc(doc(db, COLLECTIONS.SITES, id), { ...rest, updatedAt: serverTimestamp() });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : "Erreur mise à jour site" });
       throw err;

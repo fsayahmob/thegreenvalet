@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { Building2, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Building2 } from "lucide-react";
 import { usePartnerStore } from "@/stores/usePartnerStore";
 import { ENTITY_STATUS_CONFIG } from "@/lib/config";
 import { PARTNER_PIPELINE } from "@/lib/types";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import type { Partner } from "@/lib/types";
 
 function getStageName(key: string): string {
@@ -25,6 +24,7 @@ const columns: Column<Partner>[] = [
     key: "name",
     header: "Golf",
     sortable: true,
+    sortValue: (p) => p.name,
     render: (p) => (
       <div>
         <p className="text-sm font-medium text-charcoal-900">{p.name}</p>
@@ -74,6 +74,7 @@ const columns: Column<Partner>[] = [
     key: "created",
     header: "Créé le",
     sortable: true,
+    sortValue: (p) => new Date(p.createdAt).getTime(),
     render: (p) => (
       <span className="text-xs text-charcoal-500">
         {new Date(p.createdAt).toLocaleDateString("fr-FR")}
@@ -84,6 +85,7 @@ const columns: Column<Partner>[] = [
 
 export default function PartnersPage() {
   const { partners, loading, subscribe } = usePartnerStore();
+  const router = useRouter();
 
   useEffect(() => {
     const unsub = subscribe();
@@ -105,9 +107,7 @@ export default function PartnersPage() {
         columns={columns}
         data={partners}
         keyExtractor={(p) => p.id}
-        onRowClick={(p) => {
-          window.location.href = `/partners/${p.id}`;
-        }}
+        onRowClick={(p) => router.push(`/partners/${p.id}`)}
         loading={loading}
         emptyState={
           <EmptyState

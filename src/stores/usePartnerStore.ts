@@ -14,7 +14,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { COLLECTIONS } from "@/lib/config";
+import { COLLECTIONS, PARTNER_STATUS_TRANSITIONS } from "@/lib/config";
 import type { Partner, PartnerStatus, PipelineProgress, GolfEligibility } from "@/lib/types";
 import { PARTNER_PIPELINE } from "@/lib/types";
 
@@ -67,6 +67,7 @@ interface PartnerState {
   partners: Partner[];
   loading: boolean;
   error: string | null;
+  _unsubscribe: Unsubscribe | null;
 
   subscribe: () => Unsubscribe;
   createPartner: (data: Omit<Partner, "id" | "createdAt" | "updatedAt" | "pipelineProgress" | "currentStageKey">) => Promise<string>;
@@ -81,14 +82,22 @@ export const usePartnerStore = create<PartnerState>((set, get) => ({
   partners: [],
   loading: true,
   error: null,
+  _unsubscribe: null,
 
   subscribe: () => {
+    const existing = get()._unsubscribe;
+    if (existing) return existing;
+
     set({ loading: true });
     const q = query(collection(db, COLLECTIONS.PARTNERS), orderBy("createdAt", "desc"));
-    return onSnapshot(q,
+    const unsubscribe = onSnapshot(q,
       (snap) => set({ partners: snap.docs.map((d) => docToPartner(d.id, d.data() as Record<string, unknown>)), loading: false, error: null }),
       (err) => set({ loading: false, error: err.message }),
     );
+
+    const wrappedUnsub = () => { unsubscribe(); set({ _unsubscribe: null }); };
+    set({ _unsubscribe: wrappedUnsub });
+    return wrappedUnsub;
   },
 
   createPartner: async (data) => {
@@ -122,6 +131,16 @@ export const usePartnerStore = create<PartnerState>((set, get) => ({
   },
 
   updateStatus: async (id, status) => {
+    // Validate transition
+    const partner = get().partners.find((p) => p.id === id);
+    if (partner) {
+      const allowed = PARTNER_STATUS_TRANSITIONS[partner.status] ?? [];
+      if (!allowed.includes(status)) {
+        const msg = `Transition invalide : ${partner.status} → ${status}`;
+        set({ error: msg });
+        throw new Error(msg);
+      }
+    }
     await get().updatePartner(id, { status } as Partial<Partner>);
   },
 

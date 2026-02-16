@@ -11,11 +11,11 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  where,
   Timestamp,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { COLLECTIONS, SLA, LEAD_TRANSITIONS } from "@/lib/config";
 import type { Lead, LeadStatus, LeadType, LeadSource } from "@/lib/types";
 
 // ─── Helpers ──────────────────────────────────────────
@@ -66,6 +66,7 @@ interface LeadState {
   loading: boolean;
   error: string | null;
   filters: LeadFilters;
+  _unsubscribe: Unsubscribe | null;
 
   // Realtime subscription
   subscribe: () => Unsubscribe;
@@ -85,12 +86,10 @@ interface LeadState {
   clearError: () => void;
 }
 
-const LEADS_COLLECTION = "leads";
-
 // SLA deadlines: 24h for golf partners, 48h for operators
 function computeSlaDeadline(type: LeadType): Date {
   const deadline = new Date();
-  deadline.setHours(deadline.getHours() + (type === "partner" ? 24 : 48));
+  deadline.setHours(deadline.getHours() + (type === "partner" ? SLA.PARTNER_HOURS : SLA.OPERATOR_HOURS));
   return deadline;
 }
 
@@ -99,11 +98,16 @@ export const useLeadStore = create<LeadState>((set, get) => ({
   loading: true,
   error: null,
   filters: {},
+  _unsubscribe: null,
 
   subscribe: () => {
+    // Guard: prevent duplicate listeners
+    const existing = get()._unsubscribe;
+    if (existing) return existing;
+
     set({ loading: true });
     const q = query(
-      collection(db, LEADS_COLLECTION),
+      collection(db, COLLECTIONS.LEADS),
       orderBy("createdAt", "desc"),
     );
     const unsubscribe = onSnapshot(
@@ -118,14 +122,20 @@ export const useLeadStore = create<LeadState>((set, get) => ({
         set({ loading: false, error: err.message });
       },
     );
-    return unsubscribe;
+
+    const wrappedUnsub = () => {
+      unsubscribe();
+      set({ _unsubscribe: null });
+    };
+    set({ _unsubscribe: wrappedUnsub });
+    return wrappedUnsub;
   },
 
   createLead: async (data) => {
     try {
       set({ error: null });
       const slaDeadline = computeSlaDeadline(data.type);
-      const ref = await addDoc(collection(db, LEADS_COLLECTION), {
+      const ref = await addDoc(collection(db, COLLECTIONS.LEADS), {
         ...data,
         slaDeadline: Timestamp.fromDate(slaDeadline),
         slaBreached: false,
@@ -144,7 +154,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
     try {
       set({ error: null });
       const { id: _, createdAt: __, ...rest } = data as Record<string, unknown>;
-      await updateDoc(doc(db, LEADS_COLLECTION, id), {
+      await updateDoc(doc(db, COLLECTIONS.LEADS, id), {
         ...rest,
         updatedAt: serverTimestamp(),
       });
@@ -158,7 +168,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
   deleteLead: async (id) => {
     try {
       set({ error: null });
-      await deleteDoc(doc(db, LEADS_COLLECTION, id));
+      await deleteDoc(doc(db, COLLECTIONS.LEADS, id));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erreur lors de la suppression";
       set({ error: message });
@@ -167,17 +177,25 @@ export const useLeadStore = create<LeadState>((set, get) => ({
   },
 
   updateStatus: async (id, status, notes) => {
-    const updates: Record<string, unknown> = { status, updatedAt: serverTimestamp() };
-    if (status === "contacted") {
-      // First contact — stop SLA clock
+    // Validate transition
+    const lead = get().leads.find((l) => l.id === id);
+    if (lead) {
+      const allowed = LEAD_TRANSITIONS[lead.status] ?? [];
+      if (!allowed.includes(status)) {
+        const msg = `Transition invalide : ${lead.status} → ${status}`;
+        set({ error: msg });
+        throw new Error(msg);
+      }
     }
+
+    const updates: Record<string, unknown> = { status, updatedAt: serverTimestamp() };
     if (status === "qualified" && notes) {
       updates.qualificationNotes = notes;
       updates.qualificationDate = serverTimestamp();
     }
     try {
       set({ error: null });
-      await updateDoc(doc(db, LEADS_COLLECTION, id), updates);
+      await updateDoc(doc(db, COLLECTIONS.LEADS, id), updates);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erreur lors du changement de statut";
       set({ error: message });
@@ -188,7 +206,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
   convertLead: async (id, entityId) => {
     try {
       set({ error: null });
-      await updateDoc(doc(db, LEADS_COLLECTION, id), {
+      await updateDoc(doc(db, COLLECTIONS.LEADS, id), {
         status: "converted",
         convertedEntityId: entityId,
         updatedAt: serverTimestamp(),
@@ -203,7 +221,7 @@ export const useLeadStore = create<LeadState>((set, get) => ({
   rejectLead: async (id, reason) => {
     try {
       set({ error: null });
-      await updateDoc(doc(db, LEADS_COLLECTION, id), {
+      await updateDoc(doc(db, COLLECTIONS.LEADS, id), {
         status: "rejected",
         rejectionReason: reason,
         updatedAt: serverTimestamp(),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
 import { useOperatorStore } from "@/stores/useOperatorStore";
 import { ENTITY_STATUS_CONFIG } from "@/lib/config";
@@ -23,6 +24,7 @@ const columns: Column<Operator>[] = [
     key: "name",
     header: "Opérateur",
     sortable: true,
+    sortValue: (o) => `${o.lastName} ${o.firstName}`,
     render: (o) => (
       <div>
         <p className="text-sm font-medium text-charcoal-900">{o.firstName} {o.lastName}</p>
@@ -74,6 +76,7 @@ const columns: Column<Operator>[] = [
     key: "created",
     header: "Créé le",
     sortable: true,
+    sortValue: (o) => new Date(o.createdAt).getTime(),
     render: (o) => (
       <span className="text-xs text-charcoal-500">
         {new Date(o.createdAt).toLocaleDateString("fr-FR")}
@@ -84,6 +87,7 @@ const columns: Column<Operator>[] = [
 
 export default function OperatorsPage() {
   const { operators, loading, subscribe } = useOperatorStore();
+  const router = useRouter();
 
   useEffect(() => {
     const unsub = subscribe();
@@ -105,9 +109,7 @@ export default function OperatorsPage() {
         columns={columns}
         data={operators}
         keyExtractor={(o) => o.id}
-        onRowClick={(o) => {
-          window.location.href = `/operators/${o.id}`;
-        }}
+        onRowClick={(o) => router.push(`/operators/${o.id}`)}
         loading={loading}
         emptyState={
           <EmptyState

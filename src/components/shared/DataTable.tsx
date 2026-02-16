@@ -11,6 +11,8 @@ export interface Column<T> {
   header: string;
   sortable?: boolean;
   className?: string;
+  /** Raw value used for sorting. Falls back to key-based comparison if omitted. */
+  sortValue?: (item: T) => string | number;
   render: (item: T) => React.ReactNode;
 }
 
@@ -45,14 +47,19 @@ export function DataTable<T>({
     }
   }
 
-  // Sort data if sortKey is set
+  // Sort data using sortValue if available
   const sorted = sortKey
     ? [...data].sort((a, b) => {
         const col = columns.find((c) => c.key === sortKey);
-        if (!col) return 0;
-        const aVal = String(col.render(a) ?? "");
-        const bVal = String(col.render(b) ?? "");
-        return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        if (!col?.sortValue) return 0;
+        const aVal = col.sortValue(a);
+        const bVal = col.sortValue(b);
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+        }
+        return sortDir === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
       })
     : data;
 
@@ -88,6 +95,7 @@ export function DataTable<T>({
                     col.className,
                   )}
                   onClick={() => col.sortable && handleSort(col.key)}
+                  aria-sort={sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.header}
@@ -112,6 +120,9 @@ export function DataTable<T>({
                   onRowClick && "cursor-pointer hover:bg-charcoal-50/50",
                 )}
                 onClick={() => onRowClick?.(item)}
+                onKeyDown={onRowClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onRowClick(item); } } : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? "button" : undefined}
               >
                 {columns.map((col) => (
                   <td key={col.key} className={cn("py-3 px-4", col.className)}>

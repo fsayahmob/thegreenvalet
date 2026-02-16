@@ -7,6 +7,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
@@ -16,6 +17,19 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
+    }
+
+    // Check if user owns the entity referenced in a document
+    function ownsEntity(entityType, entityId) {
+      return isAuth() && (
+        (entityType == "partner"
+          && exists(/databases/$(database)/documents/partners/$(entityId))
+          && get(/databases/$(database)/documents/partners/$(entityId)).data.userId == request.auth.uid)
+        ||
+        (entityType == "operator"
+          && exists(/databases/$(database)/documents/operators/$(entityId))
+          && get(/databases/$(database)/documents/operators/$(entityId)).data.userId == request.auth.uid)
+      );
     }
 
     // ─── Users ────────────────────────────────────────
@@ -73,10 +87,13 @@ service cloud.firestore {
     // Entity owners: read own docs, create new uploads
 
     match /documents/{docId} {
-      allow read: if isAdmin() || isAuth();
-      allow create: if isAuth()
-        && request.resource.data.keys().hasAll(['entityType', 'entityId', 'type', 'fileName', 'status'])
-        && request.resource.data.status == 'uploaded';
+      allow read: if isAdmin()
+        || ownsEntity(resource.data.entityType, resource.data.entityId);
+      allow create: if isAdmin()
+        || (isAuth()
+          && request.resource.data.keys().hasAll(['entityType', 'entityId', 'type', 'fileName', 'status'])
+          && request.resource.data.status == 'uploaded'
+          && ownsEntity(request.resource.data.entityType, request.resource.data.entityId));
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -84,7 +101,7 @@ service cloud.firestore {
     // ─── Templates ────────────────────────────────────
 
     match /templates/{templateId} {
-      allow read: if isAdmin() || resource.data.isPublic == true;
+      allow read: if isAdmin() || (isAuth() && resource.data.isPublic == true);
       allow write: if isAdmin();
     }
 

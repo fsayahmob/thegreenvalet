@@ -23,8 +23,8 @@ import {
   useLeadCounts,
   useBreachedLeads,
 } from "@/stores/useLeadStore";
-import { usePartnerStore, initPartnerPipeline } from "@/stores/usePartnerStore";
-import { useOperatorStore, initOperatorPipeline } from "@/stores/useOperatorStore";
+import { usePartnerStore } from "@/stores/usePartnerStore";
+import { useOperatorStore } from "@/stores/useOperatorStore";
 import { LEAD_STATUS_CONFIG, LEAD_TRANSITIONS } from "@/lib/config";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -64,6 +64,7 @@ const columns: Column<Lead>[] = [
     key: "contact",
     header: "Contact",
     sortable: true,
+    sortValue: (l) => `${l.lastName} ${l.firstName}`,
     render: (l) => (
       <div>
         <p className="text-sm font-medium text-charcoal-900">{l.firstName} {l.lastName}</p>
@@ -102,6 +103,7 @@ const columns: Column<Lead>[] = [
     key: "date",
     header: "Date",
     sortable: true,
+    sortValue: (l) => new Date(l.createdAt).getTime(),
     render: (l) => (
       <span className="text-xs text-charcoal-500">
         {new Date(l.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
@@ -121,11 +123,13 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   const [showReject, setShowReject] = useState(false);
   const [showConvert, setShowConvert] = useState(false);
   const [converting, setConverting] = useState(false);
+  const [convertError, setConvertError] = useState<string | null>(null);
 
   const allowed = LEAD_TRANSITIONS[lead.status] ?? [];
 
   async function handleConvert() {
     setConverting(true);
+    setConvertError(null);
     try {
       let entityId: string;
       if (lead.type === "partner") {
@@ -162,8 +166,8 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
       await convertLead(lead.id, entityId);
       setShowConvert(false);
       onClose();
-    } catch {
-      // error handled by stores
+    } catch (err) {
+      setConvertError(err instanceof Error ? err.message : "Erreur lors de la conversion");
     } finally {
       setConverting(false);
     }
@@ -289,13 +293,17 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
       {/* Convert dialog */}
       <ConfirmDialog
         open={showConvert}
-        onClose={() => setShowConvert(false)}
+        onClose={() => { setShowConvert(false); setConvertError(null); }}
         onConfirm={handleConvert}
         title={`Convertir en ${lead.type === "partner" ? "partenaire" : "opérateur"}`}
         description={`Cela va créer un ${lead.type === "partner" ? "partenaire" : "opérateur"} avec les données de ce lead et initialiser son pipeline d'onboarding.`}
         confirmLabel="Convertir"
         loading={converting}
-      />
+      >
+        {convertError && (
+          <p className="text-sm text-red-600 mt-2">{convertError}</p>
+        )}
+      </ConfirmDialog>
 
       {/* Reject dialog */}
       <ConfirmDialog
