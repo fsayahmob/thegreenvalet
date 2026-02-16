@@ -49,9 +49,6 @@ const navSections: NavSection[] = [
   },
 ];
 
-// Flatten for role filtering
-const allNavItems = navSections.flatMap((s) => s.items);
-
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen } = useLayoutStore();

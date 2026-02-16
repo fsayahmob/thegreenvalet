@@ -18,7 +18,6 @@ import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SlideOver } from "@/components/shared/SlideOver";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { DocumentUploader } from "@/components/shared/DocumentUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -218,7 +217,7 @@ function CreateTemplateForm({ onClose }: { onClose: () => void }) {
 
 // ─── Template Detail ──────────────────────────────────
 
-function TemplateDetail({ template, onClose }: { template: DocumentTemplate; onClose: () => void }) {
+function TemplateDetail({ template }: { template: DocumentTemplate }) {
   const { toggleActive, togglePublic } = useTemplateStore();
 
   return (
@@ -395,7 +394,7 @@ export default function TemplatesPage() {
         title={activeTemplate?.name ?? ""}
         subtitle={activeTemplate ? `v${activeTemplate.version} — ${TEMPLATE_TYPE_LABELS[activeTemplate.type]}` : undefined}
       >
-        {activeTemplate && <TemplateDetail template={activeTemplate} onClose={() => setSelected(null)} />}
+        {activeTemplate && <TemplateDetail template={activeTemplate} />}
       </SlideOver>
 
       {/* Create drawer */}

@@ -117,7 +117,7 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   updateOperator: async (id, data) => {
     try {
       set({ error: null });
-      const { id: _, createdAt: __, ...rest } = data as Record<string, unknown>;
+      const { id: _id, createdAt: _ca, ...rest } = data as Record<string, unknown>;
       await updateDoc(doc(db, COLLECTIONS.OPERATORS, id), { ...rest, updatedAt: serverTimestamp() });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : "Erreur mise à jour" });
