@@ -48,27 +48,31 @@ export function getFirebaseFunctions(): Functions {
   return _functions;
 }
 
+// Lazy proxy that fully delegates to the real instance (including instanceof checks)
+function lazyProxy<T extends object>(factory: () => T): T {
+  return new Proxy({} as T, {
+    get(_, prop, receiver) {
+      const instance = factory();
+      const value = Reflect.get(instance, prop, receiver);
+      return typeof value === "function" ? value.bind(instance) : value;
+    },
+    has(_, prop) {
+      return Reflect.has(factory(), prop);
+    },
+    getPrototypeOf() {
+      return Reflect.getPrototypeOf(factory());
+    },
+    ownKeys() {
+      return Reflect.ownKeys(factory());
+    },
+    getOwnPropertyDescriptor(_, prop) {
+      return Reflect.getOwnPropertyDescriptor(factory(), prop);
+    },
+  });
+}
+
 // Convenience aliases (lazy — safe for SSR, won't init until called)
-export const auth = new Proxy({} as Auth, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseAuth(), prop);
-  },
-});
-
-export const db = new Proxy({} as Firestore, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseDb(), prop);
-  },
-});
-
-export const storage = new Proxy({} as FirebaseStorage, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseStorage(), prop);
-  },
-});
-
-export const functions = new Proxy({} as Functions, {
-  get(_, prop) {
-    return Reflect.get(getFirebaseFunctions(), prop);
-  },
-});
+export const auth: Auth = lazyProxy(getFirebaseAuth);
+export const db: Firestore = lazyProxy(getFirebaseDb);
+export const storage: FirebaseStorage = lazyProxy(getFirebaseStorage);
+export const functions: Functions = lazyProxy(getFirebaseFunctions);
