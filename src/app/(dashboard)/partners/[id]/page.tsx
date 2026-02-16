@@ -53,13 +53,16 @@ function EligibilityChecklist({ eligibility, onUpdate }: { eligibility: GolfElig
 export default function PartnerDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const { partners, loading, subscribe, advanceStage, updateEligibility } = usePartnerStore();
+  const partners = usePartnerStore((s) => s.partners);
+  const loading = usePartnerStore((s) => s.loading);
+  const advanceStage = usePartnerStore((s) => s.advanceStage);
+  const updateEligibility = usePartnerStore((s) => s.updateEligibility);
   const [activeTab, setActiveTab] = useState<"pipeline" | "eligibility" | "info">("pipeline");
 
   useEffect(() => {
-    const unsub = subscribe();
+    const unsub = usePartnerStore.getState().subscribe();
     return unsub;
-  }, [subscribe]);
+  }, []);
 
   const partner = partners.find((p) => p.id === id);
 

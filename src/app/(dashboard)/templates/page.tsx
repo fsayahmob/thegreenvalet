@@ -312,15 +312,16 @@ function TemplateDetail({ template }: { template: DocumentTemplate }) {
 // ─── Page ─────────────────────────────────────────────
 
 export default function TemplatesPage() {
-  const { templates, loading, subscribe } = useTemplateStore();
+  const templates = useTemplateStore((s) => s.templates);
+  const loading = useTemplateStore((s) => s.loading);
   const [selected, setSelected] = useState<DocumentTemplate | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [filterType, setFilterType] = useState<TemplateType | "all">("all");
 
   useEffect(() => {
-    const unsub = subscribe();
+    const unsub = useTemplateStore.getState().subscribe();
     return unsub;
-  }, [subscribe]);
+  }, []);
 
   const filtered = filterType === "all"
     ? templates

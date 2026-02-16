@@ -13,13 +13,15 @@ import { PipelineTimeline } from "@/components/shared/PipelineTimeline";
 export default function OperatorDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const { operators, loading, subscribe, advanceStage } = useOperatorStore();
+  const operators = useOperatorStore((s) => s.operators);
+  const loading = useOperatorStore((s) => s.loading);
+  const advanceStage = useOperatorStore((s) => s.advanceStage);
   const [activeTab, setActiveTab] = useState<"pipeline" | "info">("pipeline");
 
   useEffect(() => {
-    const unsub = subscribe();
+    const unsub = useOperatorStore.getState().subscribe();
     return unsub;
-  }, [subscribe]);
+  }, []);
 
   const operator = operators.find((o) => o.id === id);
 

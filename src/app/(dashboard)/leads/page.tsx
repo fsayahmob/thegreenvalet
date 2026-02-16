@@ -359,16 +359,18 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 // ─── Page ─────────────────────────────────────────────
 
 export default function LeadsPage() {
-  const { loading, filters, setFilters, subscribe } = useLeadStore();
+  const loading = useLeadStore((s) => s.loading);
+  const filters = useLeadStore((s) => s.filters);
+  const setFilters = useLeadStore((s) => s.setFilters);
   const leads = useFilteredLeads();
   const counts = useLeadCounts();
   const breached = useBreachedLeads();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   useEffect(() => {
-    const unsub = subscribe();
+    const unsub = useLeadStore.getState().subscribe();
     return unsub;
-  }, [subscribe]);
+  }, []);
 
   // Keep selectedLead synced with store data
   const activeLead = selectedLead

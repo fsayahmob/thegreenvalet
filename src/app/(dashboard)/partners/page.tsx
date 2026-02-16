@@ -84,13 +84,14 @@ const columns: Column<Partner>[] = [
 ];
 
 export default function PartnersPage() {
-  const { partners, loading, subscribe } = usePartnerStore();
+  const partners = usePartnerStore((s) => s.partners);
+  const loading = usePartnerStore((s) => s.loading);
   const router = useRouter();
 
   useEffect(() => {
-    const unsub = subscribe();
+    const unsub = usePartnerStore.getState().subscribe();
     return unsub;
-  }, [subscribe]);
+  }, []);
 
   return (
     <div>

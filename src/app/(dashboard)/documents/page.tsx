@@ -244,20 +244,25 @@ function DocumentDetail({
 // ─── Page ─────────────────────────────────────────────
 
 export default function DocumentsPage() {
-  const { loading, filters, setFilters, subscribe, documents: allDocuments } = useDocumentStore();
+  const loading = useDocumentStore((s) => s.loading);
+  const filters = useDocumentStore((s) => s.filters);
+  const setFilters = useDocumentStore((s) => s.setFilters);
+  const allDocuments = useDocumentStore((s) => s.documents);
   const documents = useFilteredDocuments();
   const pendingCount = usePendingReviewCount();
   const expiringDocs = useExpiringDocuments();
-  const { partners, subscribe: subPartners, advanceStage: advancePartnerStage } = usePartnerStore();
-  const { operators, subscribe: subOperators, advanceStage: advanceOperatorStage } = useOperatorStore();
+  const partners = usePartnerStore((s) => s.partners);
+  const advancePartnerStage = usePartnerStore((s) => s.advanceStage);
+  const operators = useOperatorStore((s) => s.operators);
+  const advanceOperatorStage = useOperatorStore((s) => s.advanceStage);
   const [selected, setSelected] = useState<AppDocument | null>(null);
 
   useEffect(() => {
-    const u1 = subscribe();
-    const u2 = subPartners();
-    const u3 = subOperators();
+    const u1 = useDocumentStore.getState().subscribe();
+    const u2 = usePartnerStore.getState().subscribe();
+    const u3 = useOperatorStore.getState().subscribe();
     return () => { u1(); u2(); u3(); };
-  }, [subscribe, subPartners, subOperators]);
+  }, []);
 
   // H1: Auto-advance pipeline when document approval completes all required docs for a stage
   async function handleDocApproved(doc: AppDocument) {

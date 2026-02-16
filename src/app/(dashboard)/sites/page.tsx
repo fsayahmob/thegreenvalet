@@ -11,16 +11,17 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import type { Site } from "@/lib/types";
 
 export default function SitesPage() {
-  const { sites, loading: sitesLoading, subscribe: subSites } = useSiteStore();
-  const { partners, subscribe: subPartners } = usePartnerStore();
-  const { operators, subscribe: subOperators } = useOperatorStore();
+  const sites = useSiteStore((s) => s.sites);
+  const sitesLoading = useSiteStore((s) => s.loading);
+  const partners = usePartnerStore((s) => s.partners);
+  const operators = useOperatorStore((s) => s.operators);
 
   useEffect(() => {
-    const u1 = subSites();
-    const u2 = subPartners();
-    const u3 = subOperators();
+    const u1 = useSiteStore.getState().subscribe();
+    const u2 = usePartnerStore.getState().subscribe();
+    const u3 = useOperatorStore.getState().subscribe();
     return () => { u1(); u2(); u3(); };
-  }, [subSites, subPartners, subOperators]);
+  }, []);
 
   function getPartnerName(partnerId: string): string {
     return partners.find((p) => p.id === partnerId)?.name ?? "—";

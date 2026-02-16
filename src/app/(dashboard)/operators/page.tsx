@@ -86,13 +86,14 @@ const columns: Column<Operator>[] = [
 ];
 
 export default function OperatorsPage() {
-  const { operators, loading, subscribe } = useOperatorStore();
+  const operators = useOperatorStore((s) => s.operators);
+  const loading = useOperatorStore((s) => s.loading);
   const router = useRouter();
 
   useEffect(() => {
-    const unsub = subscribe();
+    const unsub = useOperatorStore.getState().subscribe();
     return unsub;
-  }, [subscribe]);
+  }, []);
 
   return (
     <div>

@@ -78,20 +78,19 @@ function AlertItem({ type, message, href }: AlertProps) {
 export default function OverviewPage() {
   const displayName = useAuthStore((s) => s.displayName);
 
-  const { subscribe: subLeads } = useLeadStore();
-  const { partners, subscribe: subPartners } = usePartnerStore();
-  const { operators, subscribe: subOperators } = useOperatorStore();
-  const { sites, subscribe: subSites } = useSiteStore();
+  const partners = usePartnerStore((s) => s.partners);
+  const operators = useOperatorStore((s) => s.operators);
+  const sites = useSiteStore((s) => s.sites);
   const leadCounts = useLeadCounts();
   const breached = useBreachedLeads();
 
   useEffect(() => {
-    const u1 = subLeads();
-    const u2 = subPartners();
-    const u3 = subOperators();
-    const u4 = subSites();
+    const u1 = useLeadStore.getState().subscribe();
+    const u2 = usePartnerStore.getState().subscribe();
+    const u3 = useOperatorStore.getState().subscribe();
+    const u4 = useSiteStore.getState().subscribe();
     return () => { u1(); u2(); u3(); u4(); };
-  }, [subLeads, subPartners, subOperators, subSites]);
+  }, []);
 
   const onboardingPartners = partners.filter((p) => p.status === "onboarding").length;
   const activeOperators = operators.filter((o) => o.status === "active").length;

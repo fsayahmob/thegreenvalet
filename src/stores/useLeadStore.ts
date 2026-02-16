@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { create } from "zustand";
 import {
   collection,
@@ -243,30 +244,34 @@ export const useLeadStore = create<LeadState>((set, get) => ({
 // ─── Selectors ────────────────────────────────────────
 
 export function useFilteredLeads() {
-  return useLeadStore((s) => {
-    const { leads, filters } = s;
-    return leads.filter((lead) => {
+  const leads = useLeadStore((s) => s.leads);
+  const filters = useLeadStore((s) => s.filters);
+  return useMemo(() =>
+    leads.filter((lead) => {
       if (filters.type && lead.type !== filters.type) return false;
       if (filters.status && lead.status !== filters.status) return false;
       return true;
-    });
-  });
+    }),
+  [leads, filters]);
 }
 
 export function useBreachedLeads() {
-  return useLeadStore((s) =>
-    s.leads.filter((lead) => lead.slaBreached && lead.status === "new"),
+  const leads = useLeadStore((s) => s.leads);
+  return useMemo(
+    () => leads.filter((lead) => lead.slaBreached && lead.status === "new"),
+    [leads],
   );
 }
 
 export function useLeadCounts() {
-  return useLeadStore((s) => ({
-    total: s.leads.length,
-    new: s.leads.filter((l) => l.status === "new").length,
-    contacted: s.leads.filter((l) => l.status === "contacted").length,
-    qualified: s.leads.filter((l) => l.status === "qualified").length,
-    converted: s.leads.filter((l) => l.status === "converted").length,
-    rejected: s.leads.filter((l) => l.status === "rejected").length,
-    breached: s.leads.filter((l) => l.slaBreached && l.status === "new").length,
-  }));
+  const leads = useLeadStore((s) => s.leads);
+  return useMemo(() => ({
+    total: leads.length,
+    new: leads.filter((l) => l.status === "new").length,
+    contacted: leads.filter((l) => l.status === "contacted").length,
+    qualified: leads.filter((l) => l.status === "qualified").length,
+    converted: leads.filter((l) => l.status === "converted").length,
+    rejected: leads.filter((l) => l.status === "rejected").length,
+    breached: leads.filter((l) => l.slaBreached && l.status === "new").length,
+  }), [leads]);
 }

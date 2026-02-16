@@ -14,6 +14,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [debugLogs, setDebugLogs] = useState("");
 
+  // Redirect if already authenticated (must be in useEffect, not during render)
+  useEffect(() => {
+    if (user && !loading) {
+      router.replace("/overview");
+    }
+  }, [user, loading, router]);
+
   // Read persisted auth debug logs from localStorage
   useEffect(() => {
     const interval = setInterval(() => {
@@ -21,12 +28,6 @@ export default function LoginPage() {
     }, 500);
     return () => clearInterval(interval);
   }, []);
-
-  // Redirect if already authenticated
-  if (user && !loading) {
-    router.replace("/overview");
-    return null;
-  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

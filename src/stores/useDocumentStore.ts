@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { create } from "zustand";
 import {
   collection,
@@ -233,16 +234,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 // ─── Selectors ────────────────────────────────────────
 
 export function useFilteredDocuments() {
-  return useDocumentStore((s) => {
-    const { documents, filters } = s;
-    return documents.filter((doc) => {
+  const documents = useDocumentStore((s) => s.documents);
+  const filters = useDocumentStore((s) => s.filters);
+  return useMemo(() =>
+    documents.filter((doc) => {
       if (filters.entityType && doc.entityType !== filters.entityType) return false;
       if (filters.entityId && doc.entityId !== filters.entityId) return false;
       if (filters.status && doc.status !== filters.status) return false;
       if (filters.docType && doc.type !== filters.docType) return false;
       return true;
-    });
-  });
+    }),
+  [documents, filters]);
 }
 
 export function usePendingReviewCount() {
@@ -252,11 +254,12 @@ export function usePendingReviewCount() {
 }
 
 export function useExpiringDocuments(daysAhead = 30) {
-  return useDocumentStore((s) => {
+  const documents = useDocumentStore((s) => s.documents);
+  return useMemo(() => {
     const threshold = new Date();
     threshold.setDate(threshold.getDate() + daysAhead);
-    return s.documents.filter(
+    return documents.filter(
       (d) => d.status === "approved" && d.expiresAt && d.expiresAt <= threshold,
     );
-  });
+  }, [documents, daysAhead]);
 }
