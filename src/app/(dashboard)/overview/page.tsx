@@ -1,25 +1,36 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   Building2,
   Users,
   MapPin,
-  FileText,
   AlertTriangle,
   Clock,
+  Inbox,
+  ArrowRight,
+  TrendingUp,
 } from "lucide-react";
+import Link from "next/link";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useLeadStore, useLeadCounts, useBreachedLeads } from "@/stores/useLeadStore";
+import { usePartnerStore } from "@/stores/usePartnerStore";
+import { useOperatorStore } from "@/stores/useOperatorStore";
+import { useSiteStore } from "@/stores/useSiteStore";
+
+// ─── Components ───────────────────────────────────────
 
 interface StatCardProps {
   label: string;
   value: string | number;
   icon: React.ElementType;
   color: string;
+  href?: string;
 }
 
-function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-white p-5">
+function StatCard({ label, value, icon: Icon, color, href }: StatCardProps) {
+  const content = (
+    <div className={`rounded-xl border border-border bg-white p-5 transition-shadow ${href ? "hover:shadow-md cursor-pointer" : ""}`}>
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-charcoal-500">{label}</p>
         <div className={`rounded-lg p-2 ${color}`}>
@@ -29,73 +40,113 @@ function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
       <p className="mt-3 text-2xl font-bold text-charcoal-900">{value}</p>
     </div>
   );
+  return href ? <Link href={href}>{content}</Link> : content;
 }
 
 interface AlertProps {
-  type: "warning" | "info";
+  type: "warning" | "info" | "success";
   message: string;
+  href?: string;
 }
 
-function AlertItem({ type, message }: AlertProps) {
-  return (
-    <div
-      className={`flex items-start gap-3 rounded-lg px-4 py-3 text-sm ${
-        type === "warning"
-          ? "bg-amber-50 text-amber-800 border border-amber-200"
-          : "bg-blue-50 text-blue-800 border border-blue-200"
-      }`}
-    >
-      {type === "warning" ? (
-        <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-      ) : (
-        <Clock size={16} className="mt-0.5 shrink-0" />
-      )}
-      {message}
+function AlertItem({ type, message, href }: AlertProps) {
+  const styles = {
+    warning: "bg-amber-50 text-amber-800 border-amber-200",
+    info: "bg-blue-50 text-blue-800 border-blue-200",
+    success: "bg-green-50 text-green-800 border-green-200",
+  };
+  const icons = {
+    warning: AlertTriangle,
+    info: Clock,
+    success: TrendingUp,
+  };
+  const Icon = icons[type];
+
+  const content = (
+    <div className={`flex items-start gap-3 rounded-lg px-4 py-3 text-sm border ${styles[type]} ${href ? "hover:opacity-80 cursor-pointer" : ""}`}>
+      <Icon size={16} className="mt-0.5 shrink-0" />
+      <span className="flex-1">{message}</span>
+      {href && <ArrowRight size={16} className="mt-0.5 shrink-0 opacity-50" />}
     </div>
   );
+
+  return href ? <Link href={href}>{content}</Link> : content;
 }
+
+// ─── Page ─────────────────────────────────────────────
 
 export default function OverviewPage() {
   const displayName = useAuthStore((s) => s.displayName);
 
-  // Placeholder data — will be replaced with Firestore queries
-  const stats = [
-    {
-      label: "Partenaires",
-      value: 1,
-      icon: Building2,
-      color: "bg-green-100 text-green-700",
-    },
-    {
-      label: "Opérateurs",
-      value: 0,
-      icon: Users,
-      color: "bg-blue-100 text-blue-700",
-    },
-    {
-      label: "Sites actifs",
-      value: 0,
-      icon: MapPin,
-      color: "bg-purple-100 text-purple-700",
-    },
-    {
-      label: "Documents en attente",
-      value: 0,
-      icon: FileText,
-      color: "bg-amber-100 text-amber-700",
-    },
-  ];
+  const { subscribe: subLeads } = useLeadStore();
+  const { partners, subscribe: subPartners } = usePartnerStore();
+  const { operators, subscribe: subOperators } = useOperatorStore();
+  const { sites, subscribe: subSites } = useSiteStore();
+  const leadCounts = useLeadCounts();
+  const breached = useBreachedLeads();
 
-  const alerts = [
-    {
-      type: "info" as const,
-      message: "Golf de Dinard — Onboarding en cours (étape 1/6)",
-    },
-    {
-      type: "warning" as const,
-      message: "Aucun opérateur enregistré. Recrutement nécessaire.",
-    },
-  ];
+  useEffect(() => {
+    const u1 = subLeads();
+    const u2 = subPartners();
+    const u3 = subOperators();
+    const u4 = subSites();
+    return () => { u1(); u2(); u3(); u4(); };
+  }, [subLeads, subPartners, subOperators, subSites]);
+
+  const onboardingPartners = partners.filter((p) => p.status === "onboarding").length;
+  const activeOperators = operators.filter((o) => o.status === "active").length;
+  const onboardingOperators = operators.filter((o) => o.status === "onboarding").length;
+  const activeSites = sites.filter((s) => s.isActive).length;
+
+  // Build alerts dynamically
+  const alerts: AlertProps[] = [];
+
+  if (breached.length > 0) {
+    alerts.push({
+      type: "warning",
+      message: `${breached.length} lead${breached.length > 1 ? "s" : ""} en dépassement SLA — réponse immédiate requise`,
+      href: "/leads",
+    });
+  }
+
+  if (leadCounts.new > 0) {
+    alerts.push({
+      type: "info",
+      message: `${leadCounts.new} nouveau${leadCounts.new > 1 ? "x" : ""} lead${leadCounts.new > 1 ? "s" : ""} en attente de premier contact`,
+      href: "/leads",
+    });
+  }
+
+  if (onboardingPartners > 0) {
+    alerts.push({
+      type: "info",
+      message: `${onboardingPartners} partenaire${onboardingPartners > 1 ? "s" : ""} en onboarding`,
+      href: "/partners",
+    });
+  }
+
+  if (onboardingOperators > 0) {
+    alerts.push({
+      type: "info",
+      message: `${onboardingOperators} opérateur${onboardingOperators > 1 ? "s" : ""} en formation`,
+      href: "/operators",
+    });
+  }
+
+  if (activeOperators === 0 && activeSites > 0) {
+    alerts.push({
+      type: "warning",
+      message: "Aucun opérateur actif — recrutement nécessaire pour les sites actifs",
+      href: "/operators",
+    });
+  }
+
+  if (alerts.length === 0) {
+    alerts.push({
+      type: "success",
+      message: "Tout est en ordre. Aucune action immédiate requise.",
+    });
+  }
 
   return (
     <div>
@@ -109,14 +160,45 @@ export default function OverviewPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <StatCard
+          label="Leads en attente"
+          value={leadCounts.new + leadCounts.contacted}
+          icon={Inbox}
+          color="bg-amber-100 text-amber-700"
+          href="/leads"
+        />
+        <StatCard
+          label="Partenaires"
+          value={partners.length}
+          icon={Building2}
+          color="bg-green-100 text-green-700"
+          href="/partners"
+        />
+        <StatCard
+          label="Opérateurs"
+          value={operators.length}
+          icon={Users}
+          color="bg-blue-100 text-blue-700"
+          href="/operators"
+        />
+        <StatCard
+          label="Sites actifs"
+          value={activeSites}
+          icon={MapPin}
+          color="bg-purple-100 text-purple-700"
+          href="/sites"
+        />
+        <StatCard
+          label="Taux conversion"
+          value={leadCounts.total > 0 ? `${Math.round((leadCounts.converted / leadCounts.total) * 100)}%` : "—"}
+          icon={TrendingUp}
+          color="bg-green-100 text-green-700"
+        />
       </div>
 
       {/* Alerts */}
-      <div className="rounded-xl border border-[var(--border)] bg-white p-5">
+      <div className="rounded-xl border border-border bg-white p-5">
         <h2 className="text-sm font-semibold text-charcoal-900 mb-4">
           Alertes & notifications
         </h2>

@@ -1,0 +1,97 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ──────────────────────────────────────
+
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+
+    // ─── Users ────────────────────────────────────────
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ─── Leads ────────────────────────────────────────
+    // Cloud Functions write with admin SDK (bypasses rules)
+    // Only admin can read/write from client
+
+    match /leads/{leadId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ─── Partners ─────────────────────────────────────
+
+    match /partners/{partnerId} {
+      allow read: if isAdmin()
+        || (isAuth() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if false; // Never delete — soft delete via status
+
+      match /communications/{commId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // ─── Operators ────────────────────────────────────
+
+    match /operators/{operatorId} {
+      allow read: if isAdmin()
+        || (isAuth() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if false;
+
+      match /communications/{commId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // ─── Sites ────────────────────────────────────────
+
+    match /sites/{siteId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // ─── Documents ────────────────────────────────────
+    // Admin: full access
+    // Entity owners: read own docs, create new uploads
+
+    match /documents/{docId} {
+      allow read: if isAdmin() || isAuth();
+      allow create: if isAuth()
+        && request.resource.data.keys().hasAll(['entityType', 'entityId', 'type', 'fileName', 'status'])
+        && request.resource.data.status == 'uploaded';
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Templates ────────────────────────────────────
+
+    match /templates/{templateId} {
+      allow read: if isAdmin() || resource.data.isPublic == true;
+      allow write: if isAdmin();
+    }
+
+    // ─── Yousign ──────────────────────────────────────
+
+    match /yousign_requests/{requestId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

@@ -1,20 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { Send, CheckCircle } from "lucide-react";
+import { Send, CheckCircle, Loader2 } from "lucide-react";
+import { httpsCallable } from "firebase/functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader } from "@/components/ui/section-header";
+import { functions } from "@/lib/firebase";
 
 export function ContactSection() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: connecter à Firebase ou un service d'email
-    setSubmitted(true);
+    setLoading(true);
+    setError(null);
+
+    const form = new FormData(e.currentTarget);
+    const data = {
+      golfName: form.get("golf") as string,
+      contactName: form.get("contactName") as string,
+      city: form.get("city") as string,
+      email: form.get("email") as string,
+      phone: form.get("phone") as string,
+      message: form.get("message") as string,
+    };
+
+    try {
+      const submitContactForm = httpsCallable(functions, "submitContactForm");
+      await submitContactForm(data);
+      setSubmitted(true);
+    } catch {
+      setError("Une erreur est survenue. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -59,6 +83,25 @@ export function ContactSection() {
               </div>
               <div>
                 <label
+                  htmlFor="contactName"
+                  className="block text-sm font-medium text-charcoal-900 mb-1.5"
+                >
+                  Nom du contact
+                </label>
+                <Input
+                  type="text"
+                  id="contactName"
+                  name="contactName"
+                  required
+                  placeholder="Jean Dupont"
+                  className="h-12"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label
                   htmlFor="city"
                   className="block text-sm font-medium text-charcoal-900 mb-1.5"
                 >
@@ -73,9 +116,6 @@ export function ContactSection() {
                   className="h-12"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label
                   htmlFor="email"
@@ -92,21 +132,22 @@ export function ContactSection() {
                   className="h-12"
                 />
               </div>
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-charcoal-900 mb-1.5"
-                >
-                  Téléphone
-                </label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  placeholder="06 12 34 56 78"
-                  className="h-12"
-                />
-              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-charcoal-900 mb-1.5"
+              >
+                Téléphone
+              </label>
+              <Input
+                type="tel"
+                id="phone"
+                name="phone"
+                placeholder="06 12 34 56 78"
+                className="h-12"
+              />
             </div>
 
             <div>
@@ -125,9 +166,17 @@ export function ContactSection() {
               />
             </div>
 
-            <Button type="submit" size="lg">
-              <Send size={18} />
-              Envoyer
+            {error && (
+              <p className="text-sm text-red-600">{error}</p>
+            )}
+
+            <Button type="submit" size="lg" disabled={loading}>
+              {loading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
+              {loading ? "Envoi en cours…" : "Envoyer"}
             </Button>
           </form>
         )}

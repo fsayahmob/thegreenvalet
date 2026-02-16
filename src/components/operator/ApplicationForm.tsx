@@ -1,20 +1,46 @@
 "use client";
 
 import { useState } from "react";
-import { Send, CheckCircle } from "lucide-react";
+import { Send, CheckCircle, Loader2 } from "lucide-react";
+import { httpsCallable } from "firebase/functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader } from "@/components/ui/section-header";
+import { functions } from "@/lib/firebase";
 
 export function ApplicationForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // TODO: connecter à Cloud Function submitOperatorApplication
-    setSubmitted(true);
+    setLoading(true);
+    setError(null);
+
+    const form = new FormData(e.currentTarget);
+    const data = {
+      firstName: form.get("firstName") as string,
+      lastName: form.get("lastName") as string,
+      email: form.get("email") as string,
+      phone: form.get("phone") as string,
+      city: form.get("city") as string,
+      currentStatus: form.get("status") as string,
+      motivation: form.get("motivation") as string,
+      honeypot: form.get("website") as string,
+    };
+
+    try {
+      const submitApplication = httpsCallable(functions, "submitOperatorApplication");
+      await submitApplication(data);
+      setSubmitted(true);
+    } catch {
+      setError("Une erreur est survenue. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -182,9 +208,17 @@ export function ApplicationForm() {
               autoComplete="off"
             />
 
-            <Button type="submit" size="lg">
-              <Send size={18} />
-              Envoyer ma candidature
+            {error && (
+              <p className="text-sm text-red-600">{error}</p>
+            )}
+
+            <Button type="submit" size="lg" disabled={loading}>
+              {loading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Send size={18} />
+              )}
+              {loading ? "Envoi en cours…" : "Envoyer ma candidature"}
             </Button>
           </form>
         )}

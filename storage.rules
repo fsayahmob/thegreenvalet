@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Documents: authenticated users can upload, must be PDF or image, max 10MB
+    match /documents/{entityType}/{entityId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/.*');
+    }
+
+    // Templates: only admin can upload, authenticated users can read
+    match /templates/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Signed documents (Yousign): admin only
+    match /signed/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Cloud Functions write here
+    }
+  }
+}

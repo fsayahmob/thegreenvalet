@@ -2,6 +2,7 @@ import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
+import { getFunctions, type Functions } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -17,6 +18,7 @@ let _app: FirebaseApp | null = null;
 let _auth: Auth | null = null;
 let _db: Firestore | null = null;
 let _storage: FirebaseStorage | null = null;
+let _functions: Functions | null = null;
 
 function getApp(): FirebaseApp {
   if (!_app) {
@@ -41,6 +43,11 @@ export function getFirebaseStorage(): FirebaseStorage {
   return _storage;
 }
 
+export function getFirebaseFunctions(): Functions {
+  if (!_functions) _functions = getFunctions(getApp(), "europe-west1");
+  return _functions;
+}
+
 // Convenience aliases (lazy — safe for SSR, won't init until called)
 export const auth = new Proxy({} as Auth, {
   get(_, prop) {
@@ -57,5 +64,11 @@ export const db = new Proxy({} as Firestore, {
 export const storage = new Proxy({} as FirebaseStorage, {
   get(_, prop) {
     return Reflect.get(getFirebaseStorage(), prop);
+  },
+});
+
+export const functions = new Proxy({} as Functions, {
+  get(_, prop) {
+    return Reflect.get(getFirebaseFunctions(), prop);
   },
 });
