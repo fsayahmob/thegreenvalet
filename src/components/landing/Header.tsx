@@ -24,7 +24,7 @@ const navConfigs: Record<
       { label: "Le container", href: "#container" },
       { label: "Spécifications", href: "/specs" },
     ],
-    cta: { label: "Devenir partenaire", href: "#contact" },
+    cta: { label: "Estimer mes revenus", href: "#simulator" },
   },
   "/rejoindre": {
     links: [

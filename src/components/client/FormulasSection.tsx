@@ -71,7 +71,7 @@ export function FormulasSection() {
         <SectionHeader
           eyebrow="Nos formules"
           title="La bonne formule pour votre véhicule"
-          description="3 niveaux de soin. Le prix final s'adapte à la taille de votre véhicule."
+          description="Le prix d'un lavage station — avec un résultat de detailing professionnel. Et pendant ce temps, vous jouez."
         />
 
         {/* Vehicle size indicator */}
@@ -95,7 +95,7 @@ export function FormulasSection() {
               }`}
             >
               {formula.highlight && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600 text-white">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 bg-green-600 text-white">
                   La plus populaire
                 </Badge>
               )}

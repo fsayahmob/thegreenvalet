@@ -3,6 +3,7 @@ import { Footer } from "@/components/landing/Footer";
 import { OperatorHero } from "@/components/operator/OperatorHero";
 import { AdvantagesSection } from "@/components/operator/AdvantagesSection";
 import { OperatorProcess } from "@/components/operator/OperatorProcess";
+import { FormationSection } from "@/components/operator/FormationSection";
 import { OperatorFAQ } from "@/components/operator/OperatorFAQ";
 import { ApplicationForm } from "@/components/operator/ApplicationForm";
 import type { Metadata } from "next";
@@ -21,6 +22,7 @@ export default function RejoindreOperateurPage() {
         <OperatorHero />
         <AdvantagesSection />
         <OperatorProcess />
+        <FormationSection />
         <OperatorFAQ />
         <ApplicationForm />
       </main>

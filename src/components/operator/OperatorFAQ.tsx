@@ -15,7 +15,7 @@ const faqs = [
   {
     question: "Combien puis-je gagner ?",
     answer:
-      "Vos revenus dépendent du nombre de lavages réalisés. En moyenne, un opérateur à temps plein réalise 6 à 10 lavages par jour. Avec nos commissions, cela représente un revenu attractif dès le premier mois.",
+      "Vos revenus dépendent du nombre de lavages réalisés. En moyenne, un opérateur à temps plein réalise 6 à 10 lavages par jour, soit 80 à 150€ nets par jour. Sur une saison haute de 6 mois, un opérateur actif peut générer 2 000 à 3 500€/mois.",
   },
   {
     question: "Faut-il de l'expérience en lavage auto ?",

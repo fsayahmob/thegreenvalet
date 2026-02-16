@@ -73,7 +73,7 @@ export function RSESection() {
               <p className="mt-2 text-base font-medium text-green-300">
                 {point.label}
               </p>
-              <p className="mt-2 text-sm text-green-400/70 leading-relaxed">
+              <p className="mt-2 text-sm text-green-200/80 leading-relaxed">
                 {point.detail}
               </p>
             </div>

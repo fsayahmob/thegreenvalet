@@ -131,29 +131,29 @@ Style ligne fine, moderne. Format PNG 800×800 avec transparence.
 
 ### 13. `icon-liberte.png`
 ```
-Icône flat design minimaliste sur fond transparent :
+Icône flat design minimaliste :
 un personnage stylisé debout avec un calendrier flexible (jours cochés et décochés).
 Symbolise la liberté de choisir ses horaires.
 Couleurs : vert foncé (#14532d) et gris.
-Style ligne fine, moderne. Format PNG 800×800 avec transparence.
+Style ligne fine, moderne. Format PNG 800×800.
 ```
 
 ### 14. `icon-revenus.png`
 ```
-Icône flat design minimaliste sur fond transparent :
+Icône flat design minimaliste :
 une main ouverte avec des pièces/billets et une flèche vers le haut.
 Symbolise les revenus attractifs.
 Couleurs : vert foncé (#14532d) et doré (#b8860b).
-Style ligne fine, moderne. Format PNG 800×800 avec transparence.
+Style ligne fine, moderne. Format PNG 800×800.
 ```
 
 ### 15. `icon-equipement.png`
 ```
-Icône flat design minimaliste sur fond transparent :
+Icône flat design minimaliste :
 un nettoyeur vapeur professionnel avec une coche verte.
 Symbolise l'équipement fourni sans investissement.
 Couleurs : vert foncé (#14532d) et gris.
-Style ligne fine, moderne. Format PNG 800×800 avec transparence.
+Style ligne fine, moderne. Format PNG 800×800.
 ```
 
 ### 16. `texture-green.jpg`

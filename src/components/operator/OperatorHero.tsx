@@ -12,7 +12,7 @@ export function OperatorHero() {
         fill
         className="object-cover"
         priority
-        quality={85}
+        quality={75}
       />
       <div className="absolute inset-0 bg-black/55" />
 
@@ -47,8 +47,8 @@ export function OperatorHero() {
         </div>
       </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-        <ArrowDown className="text-white/60" size={28} />
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce [animation-delay:2s] [animation-iteration-count:3]">
+        <ArrowDown className="text-white/40" size={24} />
       </div>
     </section>
   );

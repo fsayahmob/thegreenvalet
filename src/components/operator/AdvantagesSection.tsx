@@ -12,9 +12,9 @@ const advantages = [
   },
   {
     image: "/images/icon-revenus.png",
-    title: "Revenus attractifs",
+    title: "80 à 150€ / jour",
     description:
-      "Commission sur chaque lavage réalisé. Plus vous travaillez, plus vous gagnez. Pas de plafond.",
+      "Commission sur chaque lavage réalisé. 6 à 10 lavages par jour en moyenne. Plus vous travaillez, plus vous gagnez — sans plafond.",
   },
   {
     image: "/images/icon-equipement.png",

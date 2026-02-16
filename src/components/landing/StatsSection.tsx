@@ -34,7 +34,7 @@ export function StatsSection() {
               <p className="mt-2 text-base font-medium text-green-300">
                 {stat.label}
               </p>
-              <p className="mt-1 text-sm text-green-400/70">{stat.detail}</p>
+              <p className="mt-1 text-sm text-green-200/80">{stat.detail}</p>
             </div>
           ))}
         </div>

@@ -52,7 +52,7 @@ export function TrustSection() {
                   G
                 </div>
                 <div>
-                  <p className="font-semibold">Gaetant</p>
+                  <p className="font-semibold">Gaëtan</p>
                   <p className="text-sm text-green-300">
                     Fondateur, The Green Valet
                   </p>

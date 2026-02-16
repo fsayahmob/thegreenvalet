@@ -84,8 +84,8 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Smooth scroll */
-html {
+/* Smooth scroll via data attribute (avoids Next.js route transition conflict) */
+html[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
 }
 

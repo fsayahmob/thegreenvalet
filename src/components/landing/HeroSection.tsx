@@ -12,7 +12,7 @@ export function HeroSection() {
         fill
         className="object-cover"
         priority
-        quality={85}
+        quality={75}
       />
       <div className="absolute inset-0 bg-black/45" />
 
@@ -39,13 +39,13 @@ export function HeroSection() {
             className="border-2 border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
             asChild
           >
-            <Link href="#contact">Votre golf est-il éligible ?</Link>
+            <Link href="#simulator">Estimer mes revenus</Link>
           </Button>
         </div>
       </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
-        <ArrowDown className="text-white/60" size={28} />
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce [animation-delay:2s] [animation-iteration-count:3]">
+        <ArrowDown className="text-white/40" size={24} />
       </div>
     </section>
   );

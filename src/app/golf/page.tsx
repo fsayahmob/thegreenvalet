@@ -2,12 +2,12 @@ import { Header } from "@/components/landing/Header";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ProblemSection } from "@/components/landing/ProblemSection";
 import { SolutionSection } from "@/components/landing/SolutionSection";
-import { ProcessSection } from "@/components/landing/ProcessSection";
+import { SimulateurSection } from "@/components/landing/SimulateurSection";
 import { ContainerSection } from "@/components/landing/ContainerSection";
-import { StatsSection } from "@/components/landing/StatsSection";
+import { ProcessSection } from "@/components/landing/ProcessSection";
 import { RSESection } from "@/components/landing/RSESection";
 import { TrustSection } from "@/components/landing/TrustSection";
-import { ContactSection } from "@/components/landing/ContactSection";
+import { StickyGolfCTA } from "@/components/landing/StickyGolfCTA";
 import { Footer } from "@/components/landing/Footer";
 import type { Metadata } from "next";
 
@@ -25,14 +25,14 @@ export default function GolfPartnerPage() {
         <HeroSection />
         <ProblemSection />
         <SolutionSection />
-        <ProcessSection />
+        <SimulateurSection />
         <ContainerSection />
-        <StatsSection />
+        <ProcessSection />
         <RSESection />
         <TrustSection />
-        <ContactSection />
       </main>
       <Footer />
+      <StickyGolfCTA />
     </>
   );
 }
