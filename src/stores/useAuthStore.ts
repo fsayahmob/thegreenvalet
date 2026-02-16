@@ -91,12 +91,14 @@ export const useAuthStore = create<AuthState>((set) => ({
           attempt: number,
         ): Promise<{ role: UserRole | null; displayName: string | null }> => {
           try {
-            // Ensure auth token is ready for Firestore
+            console.log(`[auth] fetchRole attempt=${attempt} uid=${firebaseUser.uid}`);
             await firebaseUser.getIdToken();
+            console.log("[auth] getIdToken OK");
             const userDoc = await getDoc(
               doc(db, "users", firebaseUser.uid),
             );
             const data = userDoc.data();
+            console.log("[auth] userDoc exists:", userDoc.exists(), "data:", JSON.stringify(data));
             if (!data && attempt < 2) {
               await new Promise((r) => setTimeout(r, 2000));
               return fetchRole(attempt + 1);
@@ -123,6 +125,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         };
 
         const result = await fetchRole(0);
+        console.log("[auth] final role:", result.role, "displayName:", result.displayName);
         set({
           user: firebaseUser,
           role: result.role,
