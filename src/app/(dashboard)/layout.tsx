@@ -3,7 +3,6 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Topbar } from "@/components/dashboard/Topbar";
 import { Loader2, ShieldAlert, AlertTriangle } from "lucide-react";
@@ -119,10 +118,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
-      <DashboardErrorBoundary>
-        <DashboardGuard>{children}</DashboardGuard>
-      </DashboardErrorBoundary>
-    </AuthProvider>
+    <DashboardErrorBoundary>
+      <DashboardGuard>{children}</DashboardGuard>
+    </DashboardErrorBoundary>
   );
 }
