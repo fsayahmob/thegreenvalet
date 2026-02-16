@@ -6,12 +6,14 @@ import {
   CheckCircle2,
   Loader2,
   AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import {
   collection,
   addDoc,
   getDocs,
   updateDoc,
+  setDoc,
   doc,
   query,
   where,
@@ -27,6 +29,10 @@ import { FileText } from "lucide-react";
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
+  const role = useAuthStore((s) => s.role);
+  const [promoting, setPromoting] = useState(false);
+  const [promoted, setPromoted] = useState(false);
+  const [promoteError, setPromoteError] = useState<string | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<{
     templates: number;
@@ -144,6 +150,27 @@ export default function SettingsPage() {
     }
   }
 
+  async function handlePromoteAdmin() {
+    if (!user) return;
+    setPromoting(true);
+    setPromoteError(null);
+    try {
+      await setDoc(doc(db, "users", user.uid), {
+        email: user.email,
+        displayName: user.displayName ?? user.email,
+        role: "admin",
+        createdAt: serverTimestamp(),
+      }, { merge: true });
+      setPromoted(true);
+      // Reload page to pick up new role
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      setPromoteError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setPromoting(false);
+    }
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -152,6 +179,50 @@ export default function SettingsPage() {
           Configuration et initialisation de la plateforme.
         </p>
       </div>
+
+      {/* Admin Setup — shown only when user is NOT admin */}
+      {role !== "admin" && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 max-w-lg mb-6">
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg bg-amber-100 p-2.5">
+              <ShieldCheck size={20} className="text-amber-700" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-charcoal-900">
+                Configuration administrateur
+              </h2>
+              <p className="mt-1 text-sm text-charcoal-600">
+                Votre compte n&apos;a pas le r&ocirc;le admin. Cliquez ci-dessous pour activer
+                l&apos;acc&egrave;s complet (documents, partenaires, op&eacute;rateurs, etc.).
+              </p>
+              <p className="mt-1 text-xs text-charcoal-500">
+                Connect&eacute; : {user?.email} &middot; R&ocirc;le actuel : {role ?? "aucun"}
+              </p>
+
+              <Button
+                className="mt-4"
+                onClick={handlePromoteAdmin}
+                disabled={promoting || promoted}
+              >
+                {promoting ? (
+                  <><Loader2 size={16} className="animate-spin" /> Activation...</>
+                ) : promoted ? (
+                  <><CheckCircle2 size={16} /> Admin activ&eacute; — rechargement...</>
+                ) : (
+                  <><ShieldCheck size={16} /> Activer le r&ocirc;le admin</>
+                )}
+              </Button>
+
+              {promoteError && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2">
+                  <AlertTriangle size={14} className="mt-0.5 text-red-600 shrink-0" />
+                  <p className="text-sm text-red-800">{promoteError}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Seed Data Section */}
       <div className="rounded-xl border border-border bg-white p-6 max-w-lg">

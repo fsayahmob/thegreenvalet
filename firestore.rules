@@ -36,6 +36,13 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isAuth();
+      allow write: if isAdmin() || isOwner(uid);
+    }
+
+    // ─── Config (admin bootstrap) ───────────────────
+
+    match /config/{configId} {
+      allow read: if isAuth();
       allow write: if isAdmin();
     }
 
