@@ -92,6 +92,8 @@ export const useAuthStore = create<AuthState>((set) => ({
           attempt: number,
         ): Promise<{ role: UserRole | null; displayName: string | null }> => {
           try {
+            // Ensure auth token is ready for Firestore
+            await firebaseUser.getIdToken();
             const userDoc = await getDoc(
               doc(db, "users", firebaseUser.uid),
             );
@@ -107,7 +109,12 @@ export const useAuthStore = create<AuthState>((set) => ({
                 firebaseUser.displayName ??
                 firebaseUser.email,
             };
-          } catch {
+          } catch (err) {
+            console.error("[auth] fetchRole error:", err);
+            if (attempt < 2) {
+              await new Promise((r) => setTimeout(r, 2000));
+              return fetchRole(attempt + 1);
+            }
             return {
               role: null,
               displayName:
