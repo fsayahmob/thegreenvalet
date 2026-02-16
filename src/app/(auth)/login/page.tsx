@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -8,10 +8,19 @@ import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { signIn, signInWithGoogle, loading, error, clearError, user } =
+  const { signIn, signInWithGoogle, loading, error, clearError, user, role } =
     useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [debugLogs, setDebugLogs] = useState("");
+
+  // Read persisted auth debug logs from localStorage
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDebugLogs(localStorage.getItem("__auth_debug") ?? "");
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Redirect if already authenticated
   if (user && !loading) {
@@ -166,6 +175,22 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Temporary debug panel — remove after fixing auth */}
+      {debugLogs && (
+        <div className="fixed bottom-0 left-0 right-0 bg-black/90 text-green-400 p-4 text-xs font-mono max-h-48 overflow-auto z-50">
+          <div className="flex justify-between mb-2">
+            <span className="text-white font-bold">Auth Debug (state: user={user ? "yes" : "null"} role={role ?? "null"} loading={String(loading)})</span>
+            <button
+              onClick={() => { localStorage.removeItem("__auth_debug"); setDebugLogs(""); }}
+              className="text-red-400 hover:text-red-300"
+            >
+              Clear
+            </button>
+          </div>
+          <pre className="whitespace-pre-wrap">{debugLogs}</pre>
+        </div>
+      )}
     </div>
   );
 }
