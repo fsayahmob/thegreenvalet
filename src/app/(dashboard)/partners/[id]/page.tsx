@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, MapPin, Phone, Mail, User } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { usePartnerStore } from "@/stores/usePartnerStore";
 import { ENTITY_STATUS_CONFIG } from "@/lib/config";
@@ -10,7 +10,6 @@ import { PARTNER_PIPELINE } from "@/lib/types";
 import type { GolfEligibility } from "@/lib/types";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PipelineTimeline } from "@/components/shared/PipelineTimeline";
-import { Button } from "@/components/ui/button";
 
 // ─── Eligibility display ──────────────────────────────
 

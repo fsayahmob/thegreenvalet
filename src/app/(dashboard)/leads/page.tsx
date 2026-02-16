@@ -13,7 +13,6 @@ import {
   Users,
   Mail,
   MapPin,
-  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,16 +30,15 @@ import {
   useLeadCounts,
   useBreachedLeads,
 } from "@/stores/useLeadStore";
-import { usePartnerStore, initPartnerPipeline } from "@/stores/usePartnerStore";
-import { useOperatorStore, initOperatorPipeline } from "@/stores/useOperatorStore";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { initPartnerPipeline } from "@/stores/usePartnerStore";
+import { initOperatorPipeline } from "@/stores/useOperatorStore";
 import { LEAD_STATUS_CONFIG, LEAD_TRANSITIONS } from "@/lib/config";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SlideOver } from "@/components/shared/SlideOver";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import type { Lead, LeadStatus, LeadType } from "@/lib/types";
+import type { Lead } from "@/lib/types";
 
 // ─── SLA helpers ──────────────────────────────────────
 
@@ -125,7 +123,6 @@ const columns: Column<Lead>[] = [
 
 function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   const { updateStatus, rejectLead } = useLeadStore();
-  const { user } = useAuthStore();
   const [notes, setNotes] = useState(lead.qualificationNotes ?? "");
   const [rejectReason, setRejectReason] = useState("");
   const [showReject, setShowReject] = useState(false);
@@ -362,7 +359,7 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 // ─── Page ─────────────────────────────────────────────
 
 export default function LeadsPage() {
-  const { loading, error, filters, setFilters, subscribe } = useLeadStore();
+  const { loading, filters, setFilters, subscribe } = useLeadStore();
   const leads = useFilteredLeads();
   const counts = useLeadCounts();
   const breached = useBreachedLeads();

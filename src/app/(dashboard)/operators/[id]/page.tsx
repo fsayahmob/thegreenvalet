@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
+import { ArrowLeft, Phone, Mail } from "lucide-react";
 import Link from "next/link";
 import { useOperatorStore } from "@/stores/useOperatorStore";
 import { ENTITY_STATUS_CONFIG } from "@/lib/config";
