@@ -1,4 +1,5 @@
 import { Sparkles, Star, Crown } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ const formulas = [
   {
     icon: Sparkles,
     name: "Essentielle",
+    image: "/images/formule-essentielle.jpg",
     price: "À partir de 29€",
     duration: "~30 min",
     description: "Lavage extérieur complet à la vapeur haute pression",
@@ -24,6 +26,7 @@ const formulas = [
   {
     icon: Star,
     name: "Intégrale",
+    image: "/images/formule-integrale.jpg",
     price: "À partir de 49€",
     duration: "~50 min",
     description: "Extérieur + intérieur : résultat showroom",
@@ -39,6 +42,7 @@ const formulas = [
   {
     icon: Crown,
     name: "Prestige",
+    image: "/images/formule-prestige.jpg",
     price: "À partir de 79€",
     duration: "~1h30",
     description: "Rénovation complète pour les plus exigeants",
@@ -95,6 +99,16 @@ export function FormulasSection() {
                   La plus populaire
                 </Badge>
               )}
+
+              <div className="relative -mx-8 -mt-8 mb-6 aspect-[4/3] overflow-hidden rounded-t-xl">
+                <Image
+                  src={formula.image}
+                  alt={`Formule ${formula.name}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                />
+              </div>
 
               <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
                 <formula.icon className="text-green-700" size={24} />

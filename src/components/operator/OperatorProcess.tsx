@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Send, BookOpen, Rocket } from "lucide-react";
 import { SectionHeader } from "@/components/ui/section-header";
 
@@ -6,6 +7,7 @@ const steps = [
     icon: Send,
     number: "01",
     title: "Candidatez",
+    image: null,
     description:
       "Remplissez le formulaire en 2 minutes. On vous rappelle sous 48h pour un premier échange.",
   },
@@ -13,6 +15,7 @@ const steps = [
     icon: BookOpen,
     number: "02",
     title: "Formez-vous",
+    image: "/images/step-formation.jpg",
     description:
       "2 jours de formation pratique : techniques vapeur, detailing, standards qualité, relation client.",
   },
@@ -20,6 +23,7 @@ const steps = [
     icon: Rocket,
     number: "03",
     title: "Lancez-vous",
+    image: "/images/formation-interieur.jpg",
     description:
       "Choisissez vos golfs, planifiez vos créneaux et commencez à générer des revenus dès la première semaine.",
   },
@@ -42,6 +46,18 @@ export function OperatorProcess() {
               )}
 
               <div className="flex flex-col items-center text-center">
+                {step.image && (
+                  <div className="relative w-full aspect-[4/3] mb-6 overflow-hidden rounded-xl">
+                    <Image
+                      src={step.image}
+                      alt={step.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                  </div>
+                )}
+
                 <div className="relative h-16 w-16 rounded-2xl bg-white border border-border flex items-center justify-center shadow-sm">
                   <step.icon className="text-green-700" size={28} />
                   <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-gold-500 flex items-center justify-center text-xs font-bold text-white">

@@ -6,7 +6,10 @@ export function ClientCTA() {
   return (
     <section id="book" className="py-20 sm:py-28">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="rounded-2xl bg-gradient-to-br from-green-900 to-green-800 p-10 sm:p-16 text-center">
+        <div
+          className="relative rounded-2xl bg-gradient-to-br from-green-900 to-green-800 p-10 sm:p-16 text-center overflow-hidden"
+          style={{ backgroundImage: "url(/images/texture-green.jpg)", backgroundSize: "cover", backgroundPosition: "center", backgroundBlendMode: "overlay" }}
+        >
           <div className="h-14 w-14 mx-auto rounded-full bg-green-700/50 flex items-center justify-center">
             <MapPin className="text-green-300" size={28} />
           </div>

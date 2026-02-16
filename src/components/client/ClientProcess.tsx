@@ -1,16 +1,17 @@
-import { CalendarCheck, Flag, Car } from "lucide-react";
+import Image from "next/image";
+import { Car } from "lucide-react";
 import { SectionHeader } from "@/components/ui/section-header";
 
 const steps = [
   {
-    icon: CalendarCheck,
+    image: "/images/icon-reservation.png",
     number: "01",
     title: "Réservez en ligne",
     description:
       "Choisissez votre golf, votre formule et votre créneau. En 30 secondes, c'est fait.",
   },
   {
-    icon: Flag,
+    image: "/images/icon-geolocalisation.png",
     number: "02",
     title: "Jouez tranquille",
     description:
@@ -42,8 +43,12 @@ export function ClientProcess() {
               )}
 
               <div className="flex flex-col items-center text-center">
-                <div className="relative h-16 w-16 rounded-2xl bg-white border border-border flex items-center justify-center shadow-sm">
-                  <step.icon className="text-green-700" size={28} />
+                <div className="relative h-16 w-16 rounded-2xl bg-white border border-border flex items-center justify-center shadow-sm overflow-hidden">
+                  {"image" in step && step.image ? (
+                    <Image src={step.image} alt={step.title} width={40} height={40} className="object-contain" />
+                  ) : (
+                    "icon" in step && step.icon && <step.icon className="text-green-700" size={28} />
+                  )}
                   <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-gold-500 flex items-center justify-center text-xs font-bold text-white">
                     {step.number}
                   </span>

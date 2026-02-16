@@ -2,6 +2,7 @@ import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
 import { ClientHero } from "@/components/client/ClientHero";
 import { FormulasSection } from "@/components/client/FormulasSection";
+import { BeforeAfterSection } from "@/components/client/BeforeAfterSection";
 import { SteamSection } from "@/components/client/SteamSection";
 import { ClientProcess } from "@/components/client/ClientProcess";
 import { EcoSection } from "@/components/client/EcoSection";
@@ -14,6 +15,7 @@ export default function HomePage() {
       <main>
         <ClientHero />
         <FormulasSection />
+        <BeforeAfterSection />
         <SteamSection />
         <ClientProcess />
         <EcoSection />

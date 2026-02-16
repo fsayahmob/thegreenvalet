@@ -1,28 +1,29 @@
-import { Clock, Euro, Wrench, GraduationCap, MapPin, TrendingUp } from "lucide-react";
+import Image from "next/image";
+import { MapPin, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionHeader } from "@/components/ui/section-header";
 
 const advantages = [
   {
-    icon: Clock,
+    image: "/images/icon-liberte.png",
     title: "Liberté totale",
     description:
       "Vous choisissez vos jours, vos horaires et les golfs sur lesquels vous intervenez. Vous êtes votre propre patron.",
   },
   {
-    icon: Euro,
+    image: "/images/icon-revenus.png",
     title: "Revenus attractifs",
     description:
       "Commission sur chaque lavage réalisé. Plus vous travaillez, plus vous gagnez. Pas de plafond.",
   },
   {
-    icon: Wrench,
+    image: "/images/icon-equipement.png",
     title: "Équipement fourni",
     description:
       "Nettoyeur vapeur professionnel, produits, consommables : tout est dans le container. Zéro investissement de votre part.",
   },
   {
-    icon: GraduationCap,
+    image: "/images/certificat-technicien.png",
     title: "Formation incluse",
     description:
       "Formation complète au lavage vapeur, aux techniques de detailing et aux standards qualité The Green Valet.",
@@ -60,8 +61,12 @@ export function AdvantagesSection() {
           {advantages.map((adv) => (
             <Card key={adv.title} className="p-8">
               <CardContent className="p-0">
-                <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
-                  <adv.icon className="text-green-700" size={24} />
+                <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center overflow-hidden">
+                  {"image" in adv && adv.image ? (
+                    <Image src={adv.image} alt={adv.title} width={48} height={48} className="object-contain" />
+                  ) : (
+                    "icon" in adv && adv.icon && <adv.icon className="text-green-700" size={24} />
+                  )}
                 </div>
                 <h3 className="mt-5 text-lg font-semibold text-charcoal-900">
                   {adv.title}
