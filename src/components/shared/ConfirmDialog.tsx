@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,25 +27,72 @@ export function ConfirmDialog({
   loading = false,
   children,
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (!loading) onClose();
+  }, [onClose, loading]);
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    else if (!open && dialog.open) dialog.close();
-  }, [open]);
+    if (open) {
+      setVisible(true);
+      setClosing(false);
+    } else if (visible) {
+      setClosing(true);
+      const timer = setTimeout(() => {
+        setVisible(false);
+        setClosing(false);
+      }, 200); // matches --duration-normal
+      return () => clearTimeout(timer);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (visible) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") handleClose();
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [visible, handleClose]);
+
+  if (!visible) return null;
 
   return (
-    <dialog
-      ref={dialogRef}
-      onClose={onClose}
-      className="fixed inset-0 z-50 m-auto max-w-md w-full rounded-xl border border-border bg-white p-0 shadow-xl backdrop:bg-black/40"
-    >
-      <div className="p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm ${
+          closing ? "animate-fade-out" : "animate-fade-in"
+        }`}
+        onClick={handleClose}
+      />
+
+      {/* Dialog */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={`relative z-50 w-full max-w-md rounded-xl border border-border bg-white p-6 ${
+          closing ? "animate-scale-out" : "animate-scale-in"
+        }`}
+        style={{ boxShadow: "var(--shadow-xl)" }}
+      >
         <div className="flex items-start justify-between">
           <h3 className="text-lg font-semibold text-charcoal-900">{title}</h3>
-          <button onClick={onClose} aria-label="Fermer" className="text-charcoal-400 hover:text-charcoal-700">
+          <button
+            onClick={handleClose}
+            disabled={loading}
+            aria-label="Fermer"
+            className="rounded-lg p-1 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-100 transition-colors duration-150 disabled:opacity-50"
+          >
             <X size={18} />
           </button>
         </div>
@@ -54,7 +101,7 @@ export function ConfirmDialog({
         )}
         {children && <div className="mt-4">{children}</div>}
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button variant="outline" onClick={handleClose} disabled={loading}>
             Annuler
           </Button>
           <Button variant={confirmVariant} onClick={onConfirm} disabled={loading}>
@@ -62,6 +109,6 @@ export function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </dialog>
+    </div>
   );
 }

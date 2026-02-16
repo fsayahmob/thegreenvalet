@@ -102,6 +102,9 @@ export default function SitesPage() {
         data={sites}
         keyExtractor={(s) => s.id}
         loading={sitesLoading}
+        searchable
+        searchPlaceholder="Rechercher un site…"
+        searchKeys={(s) => `${s.name} ${s.address}`}
         emptyState={
           <EmptyState
             icon={MapPin}

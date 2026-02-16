@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -54,6 +55,24 @@ export function Sidebar() {
   const { sidebarOpen, setSidebarOpen } = useLayoutStore();
   const role = useAuthStore((s) => s.role);
 
+  // Animation states for mobile overlay
+  const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (sidebarOpen) {
+      setVisible(true);
+      setClosing(false);
+    } else if (visible) {
+      setClosing(true);
+      const timer = setTimeout(() => {
+        setVisible(false);
+        setClosing(false);
+      }, 300); // matches --duration-slow
+      return () => clearTimeout(timer);
+    }
+  }, [sidebarOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Filter nav items based on role
   const allowedHrefs = (() => {
     if (role === "admin") return null; // admin sees everything
@@ -74,7 +93,7 @@ export function Sidebar() {
   const sidebarContent = (
     <>
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-[var(--border)]">
+      <div className="flex h-16 items-center justify-between px-4 border-b border-border">
         <Link href="/overview" className="flex items-center">
           <Image
             src="/images/logo.png"
@@ -85,7 +104,7 @@ export function Sidebar() {
           />
         </Link>
         <button
-          className="lg:hidden p-1 text-charcoal-500 hover:text-charcoal-900"
+          className="lg:hidden rounded-lg p-1 text-charcoal-500 hover:text-charcoal-900 hover:bg-charcoal-100 transition-colors duration-150"
           onClick={() => setSidebarOpen(false)}
         >
           <X size={20} />
@@ -108,13 +127,13 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150",
                       isActive
                         ? "bg-green-50 text-green-900"
                         : "text-charcoal-600 hover:bg-charcoal-50 hover:text-charcoal-900"
                     )}
                   >
-                    <item.icon size={18} className={isActive ? "text-green-700" : ""} />
+                    <item.icon size={18} className={cn("transition-colors duration-150", isActive ? "text-green-700" : "")} />
                     {item.label}
                   </Link>
                 );
@@ -129,18 +148,27 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-white border-r border-[var(--border)]">
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 bg-white border-r border-border">
         {sidebarContent}
       </aside>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
+      {/* Mobile overlay with animation */}
+      {visible && (
         <div className="fixed inset-0 z-40 lg:hidden">
+          {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/30"
+            className={`fixed inset-0 bg-black/40 backdrop-blur-sm ${
+              closing ? "animate-fade-out" : "animate-fade-in"
+            }`}
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-white flex flex-col shadow-xl">
+          {/* Panel */}
+          <aside
+            className={`fixed inset-y-0 left-0 z-50 w-64 bg-white flex flex-col ${
+              closing ? "animate-slide-out-l" : "animate-slide-in-l"
+            }`}
+            style={{ boxShadow: "var(--shadow-xl)" }}
+          >
             {sidebarContent}
           </aside>
         </div>

@@ -374,6 +374,9 @@ export default function TemplatesPage() {
         keyExtractor={(t) => t.id}
         onRowClick={(t) => setSelected(t)}
         loading={loading}
+        searchable
+        searchPlaceholder="Rechercher un template…"
+        searchKeys={(t) => `${t.name} ${t.description}`}
         emptyState={
           <EmptyState
             icon={FileStack}

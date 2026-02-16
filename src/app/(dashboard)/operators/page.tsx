@@ -112,6 +112,9 @@ export default function OperatorsPage() {
         keyExtractor={(o) => o.id}
         onRowClick={(o) => router.push(`/operators/${o.id}`)}
         loading={loading}
+        searchable
+        searchPlaceholder="Rechercher un opérateur…"
+        searchKeys={(o) => `${o.firstName} ${o.lastName} ${o.email}`}
         emptyState={
           <EmptyState
             icon={Users}

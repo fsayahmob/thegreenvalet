@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { X } from "lucide-react";
 
 interface SlideOverProps {
@@ -13,45 +13,84 @@ interface SlideOverProps {
 }
 
 export function SlideOver({ open, onClose, title, subtitle, children, wide = false }: SlideOverProps) {
+  const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  // Handle open/close transitions
   useEffect(() => {
     if (open) {
+      setVisible(true);
+      setClosing(false);
+    } else if (visible) {
+      setClosing(true);
+      const timer = setTimeout(() => {
+        setVisible(false);
+        setClosing(false);
+      }, 300); // matches --duration-slow
+      return () => clearTimeout(timer);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Lock body scroll
+  useEffect(() => {
+    if (visible) {
       document.body.style.overflow = "hidden";
       return () => { document.body.style.overflow = ""; };
     }
-  }, [open]);
+  }, [visible]);
 
-  if (!open) return null;
+  // Close on Escape
+  useEffect(() => {
+    if (!visible) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") handleClose();
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [visible, handleClose]);
+
+  if (!visible) return null;
 
   return (
     <div className="fixed inset-0 z-40">
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/30" onClick={onClose} />
+      {/* Backdrop with blur */}
+      <div
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm ${
+          closing ? "animate-fade-out" : "animate-fade-in"
+        }`}
+        onClick={handleClose}
+      />
 
       {/* Panel */}
       <div
-        className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-white shadow-xl border-l border-border ${
+        className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-white border-l border-border ${
           wide ? "w-full max-w-2xl" : "w-full max-w-md"
-        }`}
+        } ${closing ? "animate-slide-out-r" : "animate-slide-in-r"}`}
+        style={{ boxShadow: "var(--shadow-xl)" }}
       >
         {/* Header */}
         <div className="flex items-start justify-between border-b border-border px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-charcoal-900">{title}</h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-semibold text-charcoal-900 truncate">{title}</h2>
             {subtitle && (
-              <p className="mt-0.5 text-sm text-charcoal-500">{subtitle}</p>
+              <p className="mt-0.5 text-sm text-charcoal-500 truncate">{subtitle}</p>
             )}
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Fermer"
-            className="rounded-lg p-1 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-50"
+            className="ml-4 rounded-lg p-1.5 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-100 transition-colors duration-150"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {children}
         </div>
       </div>

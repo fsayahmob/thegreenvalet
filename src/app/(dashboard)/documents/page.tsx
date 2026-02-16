@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Eye,
   Filter,
+  Plus,
 } from "lucide-react";
 import { useDocumentStore, useFilteredDocuments, usePendingReviewCount, useExpiringDocuments } from "@/stores/useDocumentStore";
 import { usePartnerStore } from "@/stores/usePartnerStore";
@@ -22,6 +23,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SlideOver } from "@/components/shared/SlideOver";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { DocumentUploader } from "@/components/shared/DocumentUploader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -241,6 +243,116 @@ function DocumentDetail({
   );
 }
 
+// ─── Upload Document Form ─────────────────────────────
+
+function UploadDocumentForm({
+  partners,
+  operators,
+  onClose,
+}: {
+  partners: { id: string; name: string }[];
+  operators: { id: string; firstName: string; lastName: string }[];
+  onClose: () => void;
+}) {
+  const { uploadDocument } = useDocumentStore();
+  const [entityType, setEntityType] = useState<EntityType>("partner");
+  const [entityId, setEntityId] = useState("");
+  const [docType, setDocType] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const docTypes = entityType === "partner" ? PARTNER_DOCUMENT_TYPES : OPERATOR_DOCUMENT_TYPES;
+  const entities = entityType === "partner"
+    ? partners.map((p) => ({ id: p.id, label: p.name }))
+    : operators.map((o) => ({ id: o.id, label: `${o.firstName} ${o.lastName}` }));
+
+  return (
+    <div className="space-y-4">
+      {/* Entity Type */}
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Type d&apos;entité</label>
+        <div className="mt-1 flex gap-2">
+          <Button
+            variant={entityType === "partner" ? "default" : "secondary"}
+            size="sm"
+            onClick={() => { setEntityType("partner"); setEntityId(""); setDocType(""); }}
+          >
+            Partenaire
+          </Button>
+          <Button
+            variant={entityType === "operator" ? "default" : "secondary"}
+            size="sm"
+            onClick={() => { setEntityType("operator"); setEntityId(""); setDocType(""); }}
+          >
+            Opérateur
+          </Button>
+        </div>
+      </div>
+
+      {/* Entity Select */}
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
+          {entityType === "partner" ? "Partenaire" : "Opérateur"}
+        </label>
+        <select
+          className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
+          value={entityId}
+          onChange={(e) => setEntityId(e.target.value)}
+        >
+          <option value="">— Sélectionner —</option>
+          {entities.map((e) => (
+            <option key={e.id} value={e.id}>{e.label}</option>
+          ))}
+        </select>
+        {entities.length === 0 && (
+          <p className="text-xs text-charcoal-400 mt-1">
+            Aucun {entityType === "partner" ? "partenaire" : "opérateur"} disponible.
+          </p>
+        )}
+      </div>
+
+      {/* Doc Type Select */}
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Type de document</label>
+        <select
+          className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
+          value={docType}
+          onChange={(e) => setDocType(e.target.value)}
+        >
+          <option value="">— Sélectionner —</option>
+          {docTypes.map((d) => (
+            <option key={d.type} value={d.type}>{d.label}{d.required ? " *" : ""}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Uploader */}
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider mb-2 block">Fichier</label>
+        <DocumentUploader
+          accept=".pdf,.jpg,.jpeg,.png,.webp"
+          maxSizeMB={10}
+          label="Glissez le document ici"
+          onUpload={async (file) => {
+            if (!entityId) {
+              setError("Veuillez sélectionner une entité.");
+              return;
+            }
+            if (!docType) {
+              setError("Veuillez sélectionner un type de document.");
+              return;
+            }
+            setError(null);
+            await uploadDocument(file, entityType, entityId, docType);
+            onClose();
+          }}
+        />
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────
 
 export default function DocumentsPage() {
@@ -256,6 +368,7 @@ export default function DocumentsPage() {
   const operators = useOperatorStore((s) => s.operators);
   const advanceOperatorStage = useOperatorStore((s) => s.advanceStage);
   const [selected, setSelected] = useState<AppDocument | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
 
   useEffect(() => {
     const u1 = useDocumentStore.getState().subscribe();
@@ -317,11 +430,16 @@ export default function DocumentsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-charcoal-900">Documents</h1>
-        <p className="mt-1 text-sm text-charcoal-500">
-          Centre de gestion documentaire — review, approbation et suivi des expirations.
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-charcoal-900">Documents</h1>
+          <p className="mt-1 text-sm text-charcoal-500">
+            Centre de gestion documentaire — review, approbation et suivi des expirations.
+          </p>
+        </div>
+        <Button onClick={() => setShowUpload(true)}>
+          <Plus size={16} /> Upload document
+        </Button>
       </div>
 
       {/* Alerts */}
@@ -399,6 +517,9 @@ export default function DocumentsPage() {
         keyExtractor={(d) => d.id}
         onRowClick={(d) => setSelected(d)}
         loading={loading}
+        searchable
+        searchPlaceholder="Rechercher un document…"
+        searchKeys={(d) => `${d.type} ${d.fileName} ${d.entityType}`}
         emptyState={
           <EmptyState
             icon={FileText}
@@ -423,6 +544,20 @@ export default function DocumentsPage() {
             onApproved={handleDocApproved}
           />
         )}
+      </SlideOver>
+
+      {/* Upload drawer */}
+      <SlideOver
+        open={showUpload}
+        onClose={() => setShowUpload(false)}
+        title="Upload document"
+        subtitle="Associer un fichier à un partenaire ou opérateur"
+      >
+        <UploadDocumentForm
+          partners={partners}
+          operators={operators}
+          onClose={() => setShowUpload(false)}
+        />
       </SlideOver>
     </div>
   );

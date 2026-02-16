@@ -110,6 +110,9 @@ export default function PartnersPage() {
         keyExtractor={(p) => p.id}
         onRowClick={(p) => router.push(`/partners/${p.id}`)}
         loading={loading}
+        searchable
+        searchPlaceholder="Rechercher un partenaire…"
+        searchKeys={(p) => `${p.name} ${p.city} ${p.contactName} ${p.contactEmail}`}
         emptyState={
           <EmptyState
             icon={Building2}

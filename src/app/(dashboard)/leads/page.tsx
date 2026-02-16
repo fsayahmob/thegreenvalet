@@ -13,8 +13,10 @@ import {
   Users,
   Mail,
   MapPin,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   collection,
@@ -38,7 +40,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SlideOver } from "@/components/shared/SlideOver";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import type { Lead } from "@/lib/types";
+import type { Lead, LeadType, LeadSource } from "@/lib/types";
 
 // ─── SLA helpers ──────────────────────────────────────
 
@@ -356,6 +358,138 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   );
 }
 
+// ─── Create Lead Form ────────────────────────────────
+
+function CreateLeadForm({ onClose }: { onClose: () => void }) {
+  const { createLead } = useLeadStore();
+  const [type, setType] = useState<LeadType>("partner");
+  const [source, setSource] = useState<LeadSource>("website_golf");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
+  const [golfName, setGolfName] = useState("");
+  const [motivation, setMotivation] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    if (!firstName || !lastName || !email) {
+      setError("Le prénom, nom et email sont obligatoires.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await createLead({
+        type,
+        source,
+        status: "new",
+        firstName,
+        lastName,
+        email,
+        phone,
+        city,
+        ...(type === "partner" ? { golfName: golfName || undefined } : {}),
+        ...(type === "operator" ? { motivation: motivation || undefined, currentStatus: "auto-entrepreneur" } : {}),
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur création lead");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Type */}
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Type de lead</label>
+        <div className="mt-1 flex gap-2">
+          <Button
+            variant={type === "partner" ? "default" : "secondary"}
+            size="sm"
+            onClick={() => { setType("partner"); setSource("website_golf"); }}
+          >
+            <Building2 size={14} /> Golf
+          </Button>
+          <Button
+            variant={type === "operator" ? "default" : "secondary"}
+            size="sm"
+            onClick={() => { setType("operator"); setSource("website_operator"); }}
+          >
+            <Users size={14} /> Laveur
+          </Button>
+        </div>
+      </div>
+
+      {/* Source */}
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Source</label>
+        <select
+          className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
+          value={source}
+          onChange={(e) => setSource(e.target.value as LeadSource)}
+        >
+          <option value="website_golf">Site web Golf</option>
+          <option value="website_operator">Site web Opérateur</option>
+          <option value="referral">Parrainage</option>
+          <option value="outbound">Prospection</option>
+          <option value="other">Autre</option>
+        </select>
+      </div>
+
+      {/* Name */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Prénom</label>
+          <Input className="mt-1" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Nom</label>
+          <Input className="mt-1" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" />
+        </div>
+      </div>
+
+      {/* Email + Phone */}
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Email</label>
+        <Input className="mt-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@golf.fr" />
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Téléphone</label>
+        <Input className="mt-1" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="06 12 34 56 78" />
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Ville</label>
+        <Input className="mt-1" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Aix-en-Provence" />
+      </div>
+
+      {/* Type-specific */}
+      {type === "partner" && (
+        <div>
+          <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Nom du golf</label>
+          <Input className="mt-1" value={golfName} onChange={(e) => setGolfName(e.target.value)} placeholder="Golf de la Sainte-Victoire" />
+        </div>
+      )}
+      {type === "operator" && (
+        <div>
+          <label className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">Motivation</label>
+          <Textarea className="mt-1" rows={2} value={motivation} onChange={(e) => setMotivation(e.target.value)} placeholder="Pourquoi souhaitez-vous devenir laveur ?" />
+        </div>
+      )}
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <Button className="w-full" onClick={handleSubmit} disabled={loading}>
+        {loading ? "Création en cours…" : "Créer le lead"}
+      </Button>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────
 
 export default function LeadsPage() {
@@ -366,6 +500,7 @@ export default function LeadsPage() {
   const counts = useLeadCounts();
   const breached = useBreachedLeads();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
     const unsub = useLeadStore.getState().subscribe();
@@ -380,11 +515,16 @@ export default function LeadsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-charcoal-900">Leads</h1>
-        <p className="mt-1 text-sm text-charcoal-500">
-          Demandes entrantes des golfs et candidats laveurs.
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-charcoal-900">Leads</h1>
+          <p className="mt-1 text-sm text-charcoal-500">
+            Demandes entrantes des golfs et candidats laveurs.
+          </p>
+        </div>
+        <Button onClick={() => setShowCreate(true)}>
+          <Plus size={16} /> Nouveau lead
+        </Button>
       </div>
 
       {/* SLA Alert */}
@@ -451,6 +591,8 @@ export default function LeadsPage() {
         keyExtractor={(l) => l.id}
         onRowClick={(l) => setSelectedLead(l)}
         loading={loading}
+        searchable
+        searchKeys={(l) => `${l.firstName} ${l.lastName} ${l.email} ${l.golfName ?? ""} ${l.city}`}
         emptyState={
           <EmptyState
             icon={Inbox}
@@ -468,6 +610,16 @@ export default function LeadsPage() {
         subtitle={activeLead?.golfName || activeLead?.city}
       >
         {activeLead && <LeadDetail lead={activeLead} onClose={() => setSelectedLead(null)} />}
+      </SlideOver>
+
+      {/* Create lead drawer */}
+      <SlideOver
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        title="Nouveau lead"
+        subtitle="Créer un lead manuellement"
+      >
+        <CreateLeadForm onClose={() => setShowCreate(false)} />
       </SlideOver>
     </div>
   );

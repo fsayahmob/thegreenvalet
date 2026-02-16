@@ -18,6 +18,32 @@ import { usePartnerStore } from "@/stores/usePartnerStore";
 import { useOperatorStore } from "@/stores/useOperatorStore";
 import { useSiteStore } from "@/stores/useSiteStore";
 
+// ─── Skeleton ─────────────────────────────────────────
+
+function StatCardSkeleton() {
+  return (
+    <div className="rounded-xl border border-border bg-white p-5">
+      <div className="flex items-center justify-between">
+        <div className="skeleton h-4 w-24" />
+        <div className="skeleton h-9 w-9 rounded-lg" />
+      </div>
+      <div className="skeleton h-7 w-16 mt-3" />
+    </div>
+  );
+}
+
+function AlertSkeleton() {
+  return (
+    <div className="rounded-xl border border-border bg-white p-5">
+      <div className="skeleton h-4 w-40 mb-4" />
+      <div className="space-y-3">
+        <div className="skeleton h-12 w-full rounded-lg" />
+        <div className="skeleton h-12 w-3/4 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
 // ─── Components ───────────────────────────────────────
 
 interface StatCardProps {
@@ -30,10 +56,10 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, color, href }: StatCardProps) {
   const content = (
-    <div className={`rounded-xl border border-border bg-white p-5 transition-shadow ${href ? "hover:shadow-md cursor-pointer" : ""}`}>
+    <div className="group rounded-xl border border-border bg-white p-5 transition-all duration-200 hover:shadow-md hover:border-charcoal-200">
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-charcoal-500">{label}</p>
-        <div className={`rounded-lg p-2 ${color}`}>
+        <div className={`rounded-lg p-2 ${color} transition-transform duration-200 group-hover:scale-110`}>
           <Icon size={18} />
         </div>
       </div>
@@ -63,14 +89,14 @@ function AlertItem({ type, message, href }: AlertProps) {
   const Icon = icons[type];
 
   const content = (
-    <div className={`flex items-start gap-3 rounded-lg px-4 py-3 text-sm border ${styles[type]} ${href ? "hover:opacity-80 cursor-pointer" : ""}`}>
+    <div className={`flex items-start gap-3 rounded-lg px-4 py-3 text-sm border transition-all duration-150 ${styles[type]} ${href ? "hover:shadow-sm cursor-pointer" : ""}`}>
       <Icon size={16} className="mt-0.5 shrink-0" />
       <span className="flex-1">{message}</span>
-      {href && <ArrowRight size={16} className="mt-0.5 shrink-0 opacity-50" />}
+      {href && <ArrowRight size={16} className="mt-0.5 shrink-0 opacity-40 transition-transform duration-150 group-hover:translate-x-0.5" />}
     </div>
   );
 
-  return href ? <Link href={href}>{content}</Link> : content;
+  return href ? <Link href={href} className="group">{content}</Link> : content;
 }
 
 // ─── Page ─────────────────────────────────────────────
@@ -79,8 +105,12 @@ export default function OverviewPage() {
   const displayName = useAuthStore((s) => s.displayName);
 
   const partners = usePartnerStore((s) => s.partners);
+  const partnersLoading = usePartnerStore((s) => s.loading);
   const operators = useOperatorStore((s) => s.operators);
+  const operatorsLoading = useOperatorStore((s) => s.loading);
   const sites = useSiteStore((s) => s.sites);
+  const sitesLoading = useSiteStore((s) => s.loading);
+  const leadsLoading = useLeadStore((s) => s.loading);
   const leadCounts = useLeadCounts();
   const breached = useBreachedLeads();
 
@@ -91,6 +121,8 @@ export default function OverviewPage() {
     const u4 = useSiteStore.getState().subscribe();
     return () => { u1(); u2(); u3(); u4(); };
   }, []);
+
+  const isLoading = partnersLoading || operatorsLoading || sitesLoading || leadsLoading;
 
   const onboardingPartners = partners.filter((p) => p.status === "onboarding").length;
   const activeOperators = operators.filter((o) => o.status === "active").length;
@@ -159,54 +191,66 @@ export default function OverviewPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-        <StatCard
-          label="Leads en attente"
-          value={leadCounts.new + leadCounts.contacted}
-          icon={Inbox}
-          color="bg-amber-100 text-amber-700"
-          href="/leads"
-        />
-        <StatCard
-          label="Partenaires"
-          value={partners.length}
-          icon={Building2}
-          color="bg-green-100 text-green-700"
-          href="/partners"
-        />
-        <StatCard
-          label="Opérateurs"
-          value={operators.length}
-          icon={Users}
-          color="bg-blue-100 text-blue-700"
-          href="/operators"
-        />
-        <StatCard
-          label="Sites actifs"
-          value={activeSites}
-          icon={MapPin}
-          color="bg-purple-100 text-purple-700"
-          href="/sites"
-        />
-        <StatCard
-          label="Taux conversion"
-          value={leadCounts.total > 0 ? `${Math.round((leadCounts.converted / leadCounts.total) * 100)}%` : "—"}
-          icon={TrendingUp}
-          color="bg-green-100 text-green-700"
-        />
-      </div>
-
-      {/* Alerts */}
-      <div className="rounded-xl border border-border bg-white p-5">
-        <h2 className="text-sm font-semibold text-charcoal-900 mb-4">
-          Alertes & notifications
-        </h2>
-        <div className="space-y-3">
-          {alerts.map((alert, i) => (
-            <AlertItem key={i} {...alert} />
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
           ))}
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 animate-slide-up">
+          <StatCard
+            label="Leads en attente"
+            value={leadCounts.new + leadCounts.contacted}
+            icon={Inbox}
+            color="bg-amber-100 text-amber-700"
+            href="/leads"
+          />
+          <StatCard
+            label="Partenaires"
+            value={partners.length}
+            icon={Building2}
+            color="bg-green-100 text-green-700"
+            href="/partners"
+          />
+          <StatCard
+            label="Opérateurs"
+            value={operators.length}
+            icon={Users}
+            color="bg-blue-100 text-blue-700"
+            href="/operators"
+          />
+          <StatCard
+            label="Sites actifs"
+            value={activeSites}
+            icon={MapPin}
+            color="bg-purple-100 text-purple-700"
+            href="/sites"
+          />
+          <StatCard
+            label="Taux conversion"
+            value={leadCounts.total > 0 ? `${Math.round((leadCounts.converted / leadCounts.total) * 100)}%` : "—"}
+            icon={TrendingUp}
+            color="bg-green-100 text-green-700"
+          />
+        </div>
+      )}
+
+      {/* Alerts */}
+      {isLoading ? (
+        <AlertSkeleton />
+      ) : (
+        <div className="rounded-xl border border-border bg-white p-5 animate-slide-up">
+          <h2 className="text-sm font-semibold text-charcoal-900 mb-4">
+            Alertes & notifications
+          </h2>
+          <div className="space-y-3">
+            {alerts.map((alert, i) => (
+              <AlertItem key={i} {...alert} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
