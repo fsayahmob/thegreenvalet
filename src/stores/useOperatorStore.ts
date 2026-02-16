@@ -35,6 +35,7 @@ function docToOperator(id: string, d: Record<string, unknown>): Operator {
     siret: (d.siret as string) ?? "",
     email: (d.email as string) ?? "",
     phone: (d.phone as string) ?? "",
+    address: (d.address as string) ?? "",
     status: (d.status as OperatorStatus) ?? "prospect",
     currentStageKey: (d.currentStageKey as string) ?? "pre_qualification",
     pipelineProgress: (d.pipelineProgress as PipelineProgress[]) ?? [],

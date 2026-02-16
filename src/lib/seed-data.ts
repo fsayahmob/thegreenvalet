@@ -1,5 +1,12 @@
 import type { MergeFieldDefinition, TemplateType, EntityType } from "@/lib/types";
-import { CONVENTION_HTML, CGV_HTML } from "./template-content";
+import {
+  CONVENTION_HTML,
+  CGV_HTML,
+  DECHARGE_AUTO_HTML,
+  CHARTE_QUALITE_HTML,
+  CAHIER_DES_CHARGES_HTML,
+  FICHE_METIER_HTML,
+} from "./template-content";
 
 // ─── Seed Templates ─────────────────────────────────
 
@@ -29,7 +36,9 @@ export const SEED_TEMPLATES: SeedTemplate[] = [
       { key: "contact_email", label: "Email du contact", source: "partner.contactEmail", type: "text", required: true },
       { key: "site_address", label: "Adresse du site", source: "site.address", type: "address", required: true },
       { key: "site_surface", label: "Surface (m²)", source: "site.surfaceM2", type: "number", required: true },
-      { key: "monthly_fee", label: "Redevance mensuelle (€)", source: "convention.monthlyFee", type: "number", required: true },
+      { key: "commission_rate", label: "Commission partenaire (%)", source: "convention.commissionRate", type: "number", required: true },
+      { key: "prix_kwh", label: "Prix électricité (€/kWh)", source: "convention.prixKwh", type: "number", required: true },
+      { key: "prix_m3", label: "Prix eau (€/m³)", source: "convention.prixM3", type: "number", required: true },
       { key: "start_date", label: "Date de début", source: "convention.startDate", type: "date", required: true },
       { key: "end_date", label: "Date de fin", source: "convention.endDate", type: "date", required: true },
       { key: "duration_months", label: "Durée (mois)", source: "convention.durationMonths", type: "number", required: true },
@@ -46,6 +55,7 @@ export const SEED_TEMPLATES: SeedTemplate[] = [
     mergeFields: [
       { key: "operator_full_name", label: "Nom complet de l'opérateur", source: "operator.firstName+operator.lastName", type: "text", required: true },
       { key: "operator_siret", label: "SIRET de l'opérateur", source: "operator.siret", type: "text", required: true },
+      { key: "operator_address", label: "Adresse de l'opérateur", source: "operator.address", type: "address", required: true },
       { key: "commission_rate", label: "Taux de commission (%)", source: "cgv.commissionRate", type: "number", required: true },
       { key: "effective_date", label: "Date d'effet", source: "cgv.effectiveDate", type: "date", required: true },
     ],
@@ -62,12 +72,13 @@ export const SEED_TEMPLATES: SeedTemplate[] = [
   },
   {
     type: "specs",
-    name: "Specs Techniques Container",
+    name: "Cahier des Charges Technique",
     description:
       "Spécifications techniques du container de lavage vapeur : dimensions, raccordements électriques (triphasé 400V), alimentation eau, évacuation.",
     entityType: "all",
     isPublic: true,
     mergeFields: [],
+    content: CAHIER_DES_CHARGES_HTML,
   },
   {
     type: "plaquette",
@@ -86,6 +97,37 @@ export const SEED_TEMPLATES: SeedTemplate[] = [
     entityType: "all",
     isPublic: true,
     mergeFields: [],
+    content: FICHE_METIER_HTML,
+  },
+  {
+    type: "decharge_auto",
+    name: "Décharge Responsabilité Automobile",
+    description:
+      "Décharge de responsabilité relative aux dommages automobiles lors des prestations de lavage vapeur.",
+    entityType: "operator",
+    isPublic: false,
+    mergeFields: [
+      { key: "operator_full_name", label: "Nom complet de l'opérateur", source: "operator.firstName+operator.lastName", type: "text", required: true },
+      { key: "operator_siret", label: "SIRET de l'opérateur", source: "operator.siret", type: "text", required: true },
+      { key: "operator_address", label: "Adresse de l'opérateur", source: "operator.address", type: "address", required: true },
+      { key: "effective_date", label: "Date d'effet", source: "decharge.effectiveDate", type: "date", required: true },
+    ],
+    content: DECHARGE_AUTO_HTML,
+  },
+  {
+    type: "charte_qualite",
+    name: "Charte Qualité Opérateur",
+    description:
+      "Charte de conduite professionnelle définissant les règles qualité, présentation, et sanctions pour les opérateurs laveurs.",
+    entityType: "operator",
+    isPublic: false,
+    mergeFields: [
+      { key: "operator_full_name", label: "Nom complet de l'opérateur", source: "operator.firstName+operator.lastName", type: "text", required: true },
+      { key: "operator_siret", label: "SIRET de l'opérateur", source: "operator.siret", type: "text", required: true },
+      { key: "operator_address", label: "Adresse de l'opérateur", source: "operator.address", type: "address", required: true },
+      { key: "effective_date", label: "Date d'effet", source: "charte.effectiveDate", type: "date", required: true },
+    ],
+    content: CHARTE_QUALITE_HTML,
   },
 ];
 

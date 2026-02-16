@@ -125,6 +125,7 @@ export interface Operator {
   siret: string;
   email: string;
   phone: string;
+  address: string;
   status: OperatorStatus;
   currentStageKey: string;
   pipelineProgress: PipelineProgress[];
@@ -186,6 +187,14 @@ export const PARTNER_PIPELINE: PipelineStage[] = [
   },
   {
     order: 1,
+    key: "admin_verification",
+    name: "Vérification administrative",
+    description: "K-Bis du golf, RIB et pouvoir du signataire",
+    requiredDocTypes: ["kbis_partner", "rib_partner", "pouvoir_signataire"],
+    actions: ["Demander le K-Bis", "Demander le RIB", "Vérifier le pouvoir du signataire"],
+  },
+  {
+    order: 2,
     key: "site_visit",
     name: "Visite site",
     description: "Visite physique, photos, mesures, vérification raccordements",
@@ -193,7 +202,7 @@ export const PARTNER_PIPELINE: PipelineStage[] = [
     actions: ["Planifier la visite", "Prendre des photos", "Mesurer la zone disponible"],
   },
   {
-    order: 2,
+    order: 3,
     key: "plu_verification",
     name: "Vérification PLU",
     description: "Vérification du Plan Local d'Urbanisme",
@@ -201,7 +210,7 @@ export const PARTNER_PIPELINE: PipelineStage[] = [
     actions: ["Vérifier sur geoportail-urbanisme.gouv.fr", "Contacter le service urbanisme"],
   },
   {
-    order: 3,
+    order: 4,
     key: "declaration_prealable",
     name: "Déclaration Préalable",
     description: "Cerfa 13703 déposé en mairie (1-3 mois d'attente)",
@@ -211,7 +220,7 @@ export const PARTNER_PIPELINE: PipelineStage[] = [
     actions: ["Préparer le dossier Cerfa 13703", "Déposer en mairie", "Attendre la réponse"],
   },
   {
-    order: 4,
+    order: 5,
     key: "electrical_consuel",
     name: "Électricité & Consuel",
     description: "Installation électrique triphasée + attestation Consuel",
@@ -221,16 +230,16 @@ export const PARTNER_PIPELINE: PipelineStage[] = [
     actions: ["Engager un électricien qualifié", "Réaliser l'installation", "Obtenir le Consuel"],
   },
   {
-    order: 5,
+    order: 6,
     key: "insurance",
     name: "Assurance site",
-    description: "Certificat d'assurance du site fourni par le golf",
+    description: "Attestation RC exploitation du golf",
     requiredDocTypes: ["insurance_certificate"],
     canRunParallel: true,
-    actions: ["Demander l'attestation au golf"],
+    actions: ["Demander l'attestation RC exploitation au golf"],
   },
   {
-    order: 6,
+    order: 7,
     key: "site_layout",
     name: "Plan d'implantation",
     description: "Plan de positionnement du container validé par les 2 parties",
@@ -239,13 +248,13 @@ export const PARTNER_PIPELINE: PipelineStage[] = [
     actions: ["Préparer le plan", "Faire valider par le golf"],
   },
   {
-    order: 7,
+    order: 8,
     key: "convention_signed",
     name: "Convention signée",
-    description: "Convention d'occupation temporaire signée par les 2 parties",
-    requiredDocTypes: ["convention"],
+    description: "Convention d'occupation temporaire et décharge site signées",
+    requiredDocTypes: ["convention", "decharge_site"],
     requiresYousign: true,
-    actions: ["Générer la convention depuis le template", "Envoyer à signature"],
+    actions: ["Générer la convention depuis le template", "Signer la décharge site", "Envoyer à signature"],
   },
 ];
 
@@ -262,12 +271,20 @@ export const OPERATOR_PIPELINE: PipelineStage[] = [
     order: 1,
     key: "admin_documents",
     name: "Documents administratifs",
-    description: "K-Bis, pièce d'identité et casier judiciaire vierge",
-    requiredDocTypes: ["kbis_urssaf", "id_document", "casier_judiciaire"],
-    actions: ["Vérifier le SIRET", "Vérifier l'identité", "Vérifier le casier vierge"],
+    description: "K-Bis, identité, casier judiciaire, permis de conduire, domiciliation",
+    requiredDocTypes: ["kbis_urssaf", "id_document", "casier_judiciaire", "permis_conduire", "domiciliation_proof"],
+    actions: ["Vérifier le SIRET", "Vérifier l'identité", "Vérifier le casier vierge", "Vérifier le permis B", "Vérifier la domiciliation"],
   },
   {
     order: 2,
+    key: "compliance_payment",
+    name: "Conformité & paiement",
+    description: "RIB et attestation de vigilance URSSAF",
+    requiredDocTypes: ["rib", "attestation_vigilance"],
+    actions: ["Demander le RIB", "Vérifier l'attestation de vigilance URSSAF"],
+  },
+  {
+    order: 3,
     key: "insurance",
     name: "Assurance RC Pro",
     description: "Assurance responsabilité civile professionnelle valide",
@@ -275,7 +292,7 @@ export const OPERATOR_PIPELINE: PipelineStage[] = [
     actions: ["Demander l'attestation RC Pro"],
   },
   {
-    order: 3,
+    order: 4,
     key: "training",
     name: "Formation",
     description: "Formation au lavage vapeur (2 jours) + évaluation",
@@ -284,7 +301,7 @@ export const OPERATOR_PIPELINE: PipelineStage[] = [
     actions: ["Planifier la formation", "Confirmer la présence", "Évaluer le candidat"],
   },
   {
-    order: 4,
+    order: 5,
     key: "equipment",
     name: "Équipement",
     description: "Attribution et validation du matériel",
@@ -292,7 +309,7 @@ export const OPERATOR_PIPELINE: PipelineStage[] = [
     actions: ["Attribuer le matériel", "Faire signer la checklist"],
   },
   {
-    order: 5,
+    order: 6,
     key: "site_assignment",
     name: "Affectation site",
     description: "Assignation à un site actif",
@@ -300,7 +317,16 @@ export const OPERATOR_PIPELINE: PipelineStage[] = [
     actions: ["Choisir le site", "Briefer l'opérateur sur le site"],
   },
   {
-    order: 6,
+    order: 7,
+    key: "charte_decharge",
+    name: "Charte & décharge",
+    description: "Charte qualité et décharge responsabilité automobile signées",
+    requiredDocTypes: ["charte_qualite", "decharge_auto"],
+    requiresYousign: true,
+    actions: ["Générer la charte qualité", "Générer la décharge automobile", "Envoyer à signature"],
+  },
+  {
+    order: 8,
     key: "cgv_signed",
     name: "CGV signées",
     description: "Conditions générales signées",
@@ -313,33 +339,42 @@ export const OPERATOR_PIPELINE: PipelineStage[] = [
 // ─── Document Types ─────────────────────────────────
 
 export const PARTNER_DOCUMENT_TYPES = [
+  { type: "kbis_partner", label: "K-Bis du golf", required: true, hasExpiry: true },
+  { type: "rib_partner", label: "RIB du golf", required: true, hasExpiry: false },
+  { type: "pouvoir_signataire", label: "Pouvoir du signataire", required: true, hasExpiry: false },
   { type: "plu_verification", label: "Vérification PLU", required: true, hasExpiry: false },
   { type: "dp_cerfa_13703", label: "Déclaration Préalable (Cerfa 13703)", required: true, hasExpiry: false },
   { type: "dp_receipt", label: "Accusé de réception DP", required: true, hasExpiry: false },
   { type: "consuel_attestation", label: "Attestation Consuel", required: true, hasExpiry: false },
   { type: "electrical_quote", label: "Devis électricien", required: false, hasExpiry: false },
-  { type: "insurance_certificate", label: "Attestation assurance site", required: true, hasExpiry: true },
+  { type: "insurance_certificate", label: "Attestation RC exploitation du golf", required: true, hasExpiry: true },
   { type: "site_layout_plan", label: "Plan d'implantation", required: true, hasExpiry: false },
-  { type: "site_visit_report", label: "Rapport de visite", required: false, hasExpiry: false },
+  { type: "site_visit_report", label: "Rapport de visite", required: true, hasExpiry: false },
   { type: "site_photos", label: "Photos du site", required: true, hasExpiry: false },
   { type: "convention", label: "Convention signée", required: true, hasExpiry: true },
+  { type: "decharge_site", label: "Décharge responsabilité site", required: true, hasExpiry: false },
 ] as const;
 
 export const OPERATOR_DOCUMENT_TYPES = [
   { type: "kbis_urssaf", label: "K-Bis / Attestation URSSAF", required: true, hasExpiry: true },
   { type: "id_document", label: "Pièce d'identité", required: true, hasExpiry: true },
   { type: "casier_judiciaire", label: "Extrait casier judiciaire (B3)", required: true, hasExpiry: false },
+  { type: "permis_conduire", label: "Permis de conduire", required: true, hasExpiry: true },
+  { type: "domiciliation_proof", label: "Justificatif de domiciliation", required: true, hasExpiry: false },
+  { type: "rib", label: "RIB", required: true, hasExpiry: false },
+  { type: "attestation_vigilance", label: "Attestation de vigilance URSSAF", required: true, hasExpiry: true },
   { type: "rc_professionnelle", label: "RC Professionnelle", required: true, hasExpiry: true },
   { type: "training_certificate", label: "Attestation de formation", required: true, hasExpiry: false },
   { type: "training_assessment", label: "Évaluation formation", required: false, hasExpiry: false },
   { type: "equipment_checklist", label: "Checklist équipement", required: true, hasExpiry: false },
+  { type: "charte_qualite", label: "Charte qualité signée", required: true, hasExpiry: false },
+  { type: "decharge_auto", label: "Décharge responsabilité automobile", required: true, hasExpiry: false },
   { type: "cgv", label: "CGV signées", required: true, hasExpiry: false },
-  { type: "domiciliation_proof", label: "Justificatif de domiciliation", required: false, hasExpiry: false },
 ] as const;
 
 // ─── Templates ──────────────────────────────────────
 
-export type TemplateType = "convention" | "cgv" | "cgu" | "plaquette" | "fiche_metier" | "specs";
+export type TemplateType = "convention" | "cgv" | "cgu" | "plaquette" | "fiche_metier" | "specs" | "decharge_auto" | "charte_qualite";
 
 export interface MergeFieldDefinition {
   key: string;

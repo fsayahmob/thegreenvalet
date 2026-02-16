@@ -222,8 +222,9 @@ export default function PartnerDetailPage() {
                 entityId={partner.id}
                 documents={entityDocs}
                 defaultOpen={stageStatus === "in_progress"}
-                onGenerateDocument={() => {
-                  if (stage.requiresYousign && conventionTemplate) {
+                generatableDocTypes={stage.key === "convention_signed" ? ["convention"] : undefined}
+                onGenerateDocument={(docType) => {
+                  if (docType === "convention" && conventionTemplate) {
                     setGeneratorOpen(true);
                   } else {
                     handleDocApproved(stage.key);

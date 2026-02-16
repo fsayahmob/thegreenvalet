@@ -32,7 +32,9 @@ const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
   cgu: "CGU",
   plaquette: "Plaquette",
   fiche_metier: "Fiche métier",
-  specs: "Specs techniques",
+  specs: "Cahier des charges",
+  decharge_auto: "Décharge automobile",
+  charte_qualite: "Charte qualité",
 };
 
 const ENTITY_TYPE_LABELS: Record<EntityType | "all", string> = {

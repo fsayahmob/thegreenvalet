@@ -32,6 +32,10 @@ export default function OperatorDetailPage() {
   const entityDocs = useEntityDocuments("operator", id);
   const templates = useTemplateStore((s) => s.templates);
   const cgvTemplate = templates.find((t) => t.type === "cgv" && t.isActive);
+  const charteTemplate = templates.find((t) => t.type === "charte_qualite" && t.isActive);
+  const dechargeTemplate = templates.find((t) => t.type === "decharge_auto" && t.isActive);
+  const [charteGeneratorOpen, setCharteGeneratorOpen] = useState(false);
+  const [dechargeGeneratorOpen, setDechargeGeneratorOpen] = useState(false);
 
   useEffect(() => {
     const u1 = useOperatorStore.getState().subscribe();
@@ -89,6 +93,7 @@ export default function OperatorDetailPage() {
     email: operator.email,
     phone: operator.phone,
     siret: operator.siret,
+    address: operator.address,
   };
 
   return (
@@ -168,8 +173,16 @@ export default function OperatorDetailPage() {
                 entityId={operator.id}
                 documents={entityDocs}
                 defaultOpen={stageStatus === "in_progress"}
-                onGenerateDocument={() => {
-                  if (stage.requiresYousign && cgvTemplate) {
+                generatableDocTypes={
+                  stage.key === "charte_decharge" ? ["charte_qualite", "decharge_auto"] :
+                  stage.key === "cgv_signed" ? ["cgv"] : undefined
+                }
+                onGenerateDocument={(docType) => {
+                  if (docType === "charte_qualite" && charteTemplate) {
+                    setCharteGeneratorOpen(true);
+                  } else if (docType === "decharge_auto" && dechargeTemplate) {
+                    setDechargeGeneratorOpen(true);
+                  } else if (docType === "cgv" && cgvTemplate) {
                     setGeneratorOpen(true);
                   } else {
                     handleDocApproved(stage.key);
@@ -181,7 +194,7 @@ export default function OperatorDetailPage() {
         </div>
       )}
 
-      {/* Document Generator */}
+      {/* Document Generators */}
       {cgvTemplate && operator && (
         <DocumentGenerator
           open={generatorOpen}
@@ -191,6 +204,28 @@ export default function OperatorDetailPage() {
           entityId={operator.id}
           context={buildMergeContext("operator", operator as unknown as Record<string, unknown>)}
           onGenerated={() => handleDocApproved("cgv_signed")}
+        />
+      )}
+      {charteTemplate && operator && (
+        <DocumentGenerator
+          open={charteGeneratorOpen}
+          onClose={() => setCharteGeneratorOpen(false)}
+          template={charteTemplate}
+          entityType="operator"
+          entityId={operator.id}
+          context={buildMergeContext("operator", operator as unknown as Record<string, unknown>)}
+          onGenerated={() => handleDocApproved("charte_decharge")}
+        />
+      )}
+      {dechargeTemplate && operator && (
+        <DocumentGenerator
+          open={dechargeGeneratorOpen}
+          onClose={() => setDechargeGeneratorOpen(false)}
+          template={dechargeTemplate}
+          entityType="operator"
+          entityId={operator.id}
+          context={buildMergeContext("operator", operator as unknown as Record<string, unknown>)}
+          onGenerated={() => handleDocApproved("charte_decharge")}
         />
       )}
 

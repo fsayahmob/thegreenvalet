@@ -93,6 +93,9 @@ export function buildMergeContext(
       full_name: `${entity.firstName ?? ""} ${entity.lastName ?? ""}`.trim(),
     },
     cgv: extras?.cgv ?? {},
+    charte: extras?.charte ?? {},
+    decharge: extras?.decharge ?? {},
+    site: extras?.site ?? {},
     ...extras,
   };
 }

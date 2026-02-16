@@ -31,6 +31,7 @@ const OPERATOR_FIELDS: FieldDef[] = [
   { key: "email", label: "Email", type: "email" },
   { key: "phone", label: "Téléphone", type: "tel" },
   { key: "siret", label: "SIRET", placeholder: "123 456 789 00012" },
+  { key: "address", label: "Adresse" },
 ];
 
 // ─── Component ────────────────────────────────────────

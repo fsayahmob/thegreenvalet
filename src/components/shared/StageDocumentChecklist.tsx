@@ -224,6 +224,7 @@ interface StageDocumentChecklistProps {
   documents: AppDocument[];
   defaultOpen?: boolean;
   onGenerateDocument?: (docType: string) => void;
+  generatableDocTypes?: string[];
 }
 
 export function StageDocumentChecklist({
@@ -234,6 +235,7 @@ export function StageDocumentChecklist({
   documents,
   defaultOpen = false,
   onGenerateDocument,
+  generatableDocTypes,
 }: StageDocumentChecklistProps) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -290,7 +292,7 @@ export function StageDocumentChecklist({
                 docStatus={ds}
                 entityType={entityType}
                 entityId={entityId}
-                isGeneratable={stage.requiresYousign === true && ds.required}
+                isGeneratable={generatableDocTypes ? generatableDocTypes.includes(ds.type) : (stage.requiresYousign === true && ds.required)}
                 onGenerate={onGenerateDocument ? () => onGenerateDocument(ds.type) : undefined}
               />
             ))}
