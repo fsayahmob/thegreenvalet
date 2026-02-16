@@ -12,6 +12,7 @@ import {
   Download,
 } from "lucide-react";
 import { useTemplateStore } from "@/stores/useTemplateStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { DocumentTemplate, TemplateType, EntityType } from "@/lib/types";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -115,6 +116,7 @@ const columns: Column<DocumentTemplate>[] = [
 
 function CreateTemplateForm({ onClose }: { onClose: () => void }) {
   const { createTemplate } = useTemplateStore();
+  const { user } = useAuthStore();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<TemplateType>("convention");
@@ -140,8 +142,11 @@ function CreateTemplateForm({ onClose }: { onClose: () => void }) {
         mergeFields: [],
         isActive: true,
         isPublic,
-        createdBy: "admin",
+        createdBy: user?.uid ?? "admin",
       });
+      // H5: Reset form state before closing
+      setName(""); setDescription(""); setType("convention");
+      setEntityType("partner"); setIsPublic(false); setFile(null);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur création");

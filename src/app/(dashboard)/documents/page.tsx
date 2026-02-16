@@ -13,8 +13,9 @@ import {
 import { useDocumentStore, useFilteredDocuments, usePendingReviewCount, useExpiringDocuments } from "@/stores/useDocumentStore";
 import { usePartnerStore } from "@/stores/usePartnerStore";
 import { useOperatorStore } from "@/stores/useOperatorStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { DOCUMENT_STATUS_CONFIG } from "@/lib/config";
-import { PARTNER_DOCUMENT_TYPES, OPERATOR_DOCUMENT_TYPES } from "@/lib/types";
+import { PARTNER_DOCUMENT_TYPES, OPERATOR_DOCUMENT_TYPES, PARTNER_PIPELINE, OPERATOR_PIPELINE } from "@/lib/types";
 import type { AppDocument, DocumentStatus, EntityType } from "@/lib/types";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -103,12 +104,15 @@ function DocumentDetail({
   document: doc,
   entityName,
   onClose,
+  onApproved,
 }: {
   document: AppDocument;
   entityName: string;
   onClose: () => void;
+  onApproved?: (doc: AppDocument) => void;
 }) {
   const { approveDocument, rejectDocument } = useDocumentStore();
+  const { user } = useAuthStore();
   const [showReject, setShowReject] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -118,7 +122,8 @@ function DocumentDetail({
   async function handleApprove() {
     setLoading(true);
     try {
-      await approveDocument(doc.id, "admin"); // TODO: use real user ID
+      await approveDocument(doc.id, user?.uid ?? "admin");
+      onApproved?.(doc);
       onClose();
     } finally {
       setLoading(false);
@@ -239,12 +244,12 @@ function DocumentDetail({
 // ─── Page ─────────────────────────────────────────────
 
 export default function DocumentsPage() {
-  const { loading, filters, setFilters, subscribe } = useDocumentStore();
+  const { loading, filters, setFilters, subscribe, documents: allDocuments } = useDocumentStore();
   const documents = useFilteredDocuments();
   const pendingCount = usePendingReviewCount();
   const expiringDocs = useExpiringDocuments();
-  const { partners, subscribe: subPartners } = usePartnerStore();
-  const { operators, subscribe: subOperators } = useOperatorStore();
+  const { partners, subscribe: subPartners, advanceStage: advancePartnerStage } = usePartnerStore();
+  const { operators, subscribe: subOperators, advanceStage: advanceOperatorStage } = useOperatorStore();
   const [selected, setSelected] = useState<AppDocument | null>(null);
 
   useEffect(() => {
@@ -253,6 +258,39 @@ export default function DocumentsPage() {
     const u3 = subOperators();
     return () => { u1(); u2(); u3(); };
   }, [subscribe, subPartners, subOperators]);
+
+  // H1: Auto-advance pipeline when document approval completes all required docs for a stage
+  async function handleDocApproved(doc: AppDocument) {
+    const pipeline = doc.entityType === "partner" ? PARTNER_PIPELINE : OPERATOR_PIPELINE;
+    const advanceStage = doc.entityType === "partner" ? advancePartnerStage : advanceOperatorStage;
+    const entity = doc.entityType === "partner"
+      ? partners.find((p) => p.id === doc.entityId)
+      : operators.find((o) => o.id === doc.entityId);
+    if (!entity) return;
+
+    // Find which pipeline stage requires this doc type
+    const stage = pipeline.find((s) => s.requiredDocTypes.includes(doc.type));
+    if (!stage) return;
+
+    // Check if stage is in_progress
+    const progress = entity.pipelineProgress.find((p) => p.stageKey === stage.key);
+    if (!progress || progress.status !== "in_progress") return;
+
+    // Check if ALL required docs for this stage are now approved
+    const entityDocs = allDocuments.filter(
+      (d) => d.entityType === doc.entityType && d.entityId === doc.entityId && d.status === "approved",
+    );
+    const allRequired = stage.requiredDocTypes.every((type) =>
+      type === doc.type || entityDocs.some((ed) => ed.type === type),
+    );
+    if (allRequired) {
+      try {
+        await advanceStage(entity.id, stage.key, "Auto-avancé après approbation des documents requis");
+      } catch {
+        // Silent fail — pipeline advancement is best-effort
+      }
+    }
+  }
 
   function getEntityName(entityType: EntityType, entityId: string): string {
     if (entityType === "partner") {
@@ -377,6 +415,7 @@ export default function DocumentsPage() {
             document={activeDoc}
             entityName={getEntityName(activeDoc.entityType, activeDoc.entityId)}
             onClose={() => setSelected(null)}
+            onApproved={handleDocApproved}
           />
         )}
       </SlideOver>

@@ -131,15 +131,18 @@ export const usePartnerStore = create<PartnerState>((set, get) => ({
   },
 
   updateStatus: async (id, status) => {
-    // Validate transition
+    // Validate transition — require entity to be loaded
     const partner = get().partners.find((p) => p.id === id);
-    if (partner) {
-      const allowed = PARTNER_STATUS_TRANSITIONS[partner.status] ?? [];
-      if (!allowed.includes(status)) {
-        const msg = `Transition invalide : ${partner.status} → ${status}`;
-        set({ error: msg });
-        throw new Error(msg);
-      }
+    if (!partner) {
+      const msg = "Partenaire introuvable — impossible de valider la transition.";
+      set({ error: msg });
+      throw new Error(msg);
+    }
+    const allowed = PARTNER_STATUS_TRANSITIONS[partner.status] ?? [];
+    if (!allowed.includes(status)) {
+      const msg = `Transition invalide : ${partner.status} → ${status}`;
+      set({ error: msg });
+      throw new Error(msg);
     }
     await get().updatePartner(id, { status } as Partial<Partner>);
   },
@@ -147,6 +150,14 @@ export const usePartnerStore = create<PartnerState>((set, get) => ({
   advanceStage: async (id, stageKey, notes) => {
     const partner = get().partners.find((p) => p.id === id);
     if (!partner) return;
+
+    // Prevent stage skip — stage must be in_progress
+    const currentProgress = partner.pipelineProgress.find((p) => p.stageKey === stageKey);
+    if (!currentProgress || currentProgress.status !== "in_progress") {
+      const msg = `Impossible d'avancer l'étape "${stageKey}" — elle n'est pas en cours.`;
+      set({ error: msg });
+      throw new Error(msg);
+    }
 
     const updated = partner.pipelineProgress.map((p) => {
       if (p.stageKey === stageKey) {

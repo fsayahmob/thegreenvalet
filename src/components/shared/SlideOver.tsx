@@ -23,13 +23,13 @@ export function SlideOver({ open, onClose, title, subtitle, children, wide = fal
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-40">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/30" onClick={onClose} />
 
       {/* Panel */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-white shadow-xl border-l border-border ${
+        className={`fixed inset-y-0 right-0 z-40 flex flex-col bg-white shadow-xl border-l border-border ${
           wide ? "w-full max-w-2xl" : "w-full max-w-md"
         }`}
       >
@@ -43,6 +43,7 @@ export function SlideOver({ open, onClose, title, subtitle, children, wide = fal
           </div>
           <button
             onClick={onClose}
+            aria-label="Fermer"
             className="rounded-lg p-1 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-50"
           >
             <X size={20} />

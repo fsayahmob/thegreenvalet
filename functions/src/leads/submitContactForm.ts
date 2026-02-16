@@ -29,7 +29,7 @@ function ensureString(val: unknown, name: string, maxLen = MAX_TEXT): string {
  * Creates a Lead document in Firestore with type "partner".
  */
 export const submitContactForm = onCall<ContactFormData>(
-  { region: "europe-west1" },
+  { region: "europe-west1", cors: [/thegreenvalet\.fr$/, /localhost/] },
   async (request) => {
     const data = request.data;
 
@@ -45,18 +45,18 @@ export const submitContactForm = onCall<ContactFormData>(
     if (!golfName || !contactName || !city || !email) {
       throw new HttpsError(
         "invalid-argument",
-        "Les champs golfName, contactName, city et email sont obligatoires.",
+        "Données invalides. Veuillez vérifier le formulaire.",
       );
     }
 
     // Email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      throw new HttpsError("invalid-argument", "Adresse email invalide.");
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      throw new HttpsError("invalid-argument", "Données invalides. Veuillez vérifier le formulaire.");
     }
 
     // Phone validation (if provided)
     if (phone && !/^[\d\s\-+().]{6,20}$/.test(phone)) {
-      throw new HttpsError("invalid-argument", "Numéro de téléphone invalide.");
+      throw new HttpsError("invalid-argument", "Données invalides. Veuillez vérifier le formulaire.");
     }
 
     // Parse contact name into first/last
@@ -70,7 +70,7 @@ export const submitContactForm = onCall<ContactFormData>(
 
     const db = getFirestore();
 
-    // Rate limit: max 3 leads from same email in 24h
+    // Rate limit: max 3 leads from same email in 24h (checked BEFORE any writes)
     const recent = await db
       .collection("leads")
       .where("email", "==", email.toLowerCase())
@@ -78,7 +78,8 @@ export const submitContactForm = onCall<ContactFormData>(
       .limit(3)
       .get();
     if (recent.size >= 3) {
-      throw new HttpsError("resource-exhausted", "Trop de demandes récentes. Réessayez plus tard.");
+      // Generic message — don't reveal rate limiting specifics
+      throw new HttpsError("resource-exhausted", "Demande non traitée. Veuillez réessayer plus tard.");
     }
 
     const leadRef = await db.collection("leads").add({

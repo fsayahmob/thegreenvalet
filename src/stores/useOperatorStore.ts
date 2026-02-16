@@ -126,14 +126,18 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   },
 
   updateStatus: async (id, status) => {
+    // Validate transition — require entity to be loaded
     const operator = get().operators.find((o) => o.id === id);
-    if (operator) {
-      const allowed = OPERATOR_STATUS_TRANSITIONS[operator.status] ?? [];
-      if (!allowed.includes(status)) {
-        const msg = `Transition invalide : ${operator.status} → ${status}`;
-        set({ error: msg });
-        throw new Error(msg);
-      }
+    if (!operator) {
+      const msg = "Opérateur introuvable — impossible de valider la transition.";
+      set({ error: msg });
+      throw new Error(msg);
+    }
+    const allowed = OPERATOR_STATUS_TRANSITIONS[operator.status] ?? [];
+    if (!allowed.includes(status)) {
+      const msg = `Transition invalide : ${operator.status} → ${status}`;
+      set({ error: msg });
+      throw new Error(msg);
     }
     await get().updateOperator(id, { status } as Partial<Operator>);
   },
@@ -141,6 +145,14 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   advanceStage: async (id, stageKey, notes) => {
     const operator = get().operators.find((o) => o.id === id);
     if (!operator) return;
+
+    // Prevent stage skip — stage must be in_progress
+    const currentProgress = operator.pipelineProgress.find((p) => p.stageKey === stageKey);
+    if (!currentProgress || currentProgress.status !== "in_progress") {
+      const msg = `Impossible d'avancer l'étape "${stageKey}" — elle n'est pas en cours.`;
+      set({ error: msg });
+      throw new Error(msg);
+    }
 
     const updated = operator.pipelineProgress.map((p) => {
       if (p.stageKey === stageKey) {

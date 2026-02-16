@@ -39,12 +39,31 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Enum validators
+    function isValidLeadStatus(s) {
+      return s in ["new", "contacted", "qualified", "converted", "rejected"];
+    }
+    function isValidPartnerStatus(s) {
+      return s in ["prospect", "onboarding", "active", "suspended"];
+    }
+    function isValidOperatorStatus(s) {
+      return s in ["prospect", "onboarding", "active", "suspended"];
+    }
+    function isValidDocStatus(s) {
+      return s in ["uploaded", "approved", "rejected", "expired"];
+    }
+
     // ─── Leads ────────────────────────────────────────
     // Cloud Functions write with admin SDK (bypasses rules)
     // Only admin can read/write from client
 
     match /leads/{leadId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && isValidLeadStatus(request.resource.data.status);
+      allow update: if isAdmin()
+        && isValidLeadStatus(request.resource.data.status);
+      allow delete: if false;
     }
 
     // ─── Partners ─────────────────────────────────────
@@ -52,8 +71,10 @@ service cloud.firestore {
     match /partners/{partnerId} {
       allow read: if isAdmin()
         || (isAuth() && resource.data.userId == request.auth.uid);
-      allow create: if isAdmin();
-      allow update: if isAdmin();
+      allow create: if isAdmin()
+        && isValidPartnerStatus(request.resource.data.status);
+      allow update: if isAdmin()
+        && isValidPartnerStatus(request.resource.data.status);
       allow delete: if false; // Never delete — soft delete via status
 
       match /communications/{commId} {
@@ -66,8 +87,10 @@ service cloud.firestore {
     match /operators/{operatorId} {
       allow read: if isAdmin()
         || (isAuth() && resource.data.userId == request.auth.uid);
-      allow create: if isAdmin();
-      allow update: if isAdmin();
+      allow create: if isAdmin()
+        && isValidOperatorStatus(request.resource.data.status);
+      allow update: if isAdmin()
+        && isValidOperatorStatus(request.resource.data.status);
       allow delete: if false;
 
       match /communications/{commId} {
@@ -93,8 +116,10 @@ service cloud.firestore {
         || (isAuth()
           && request.resource.data.keys().hasAll(['entityType', 'entityId', 'type', 'fileName', 'status'])
           && request.resource.data.status == 'uploaded'
+          && isValidDocStatus(request.resource.data.status)
           && ownsEntity(request.resource.data.entityType, request.resource.data.entityId));
-      allow update: if isAdmin();
+      allow update: if isAdmin()
+        && isValidDocStatus(request.resource.data.status);
       allow delete: if isAdmin();
     }
 

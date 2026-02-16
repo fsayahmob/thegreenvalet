@@ -45,7 +45,7 @@ export function ConfirmDialog({
       <div className="p-6">
         <div className="flex items-start justify-between">
           <h3 className="text-lg font-semibold text-charcoal-900">{title}</h3>
-          <button onClick={onClose} className="text-charcoal-400 hover:text-charcoal-700">
+          <button onClick={onClose} aria-label="Fermer" className="text-charcoal-400 hover:text-charcoal-700">
             <X size={18} />
           </button>
         </div>

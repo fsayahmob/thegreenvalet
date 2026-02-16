@@ -6,6 +6,7 @@ import {
   doc,
   addDoc,
   updateDoc,
+  writeBatch,
   query,
   orderBy,
   onSnapshot,
@@ -152,13 +153,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       const template = get().templates.find((t) => t.id === templateId);
       if (!template) throw new Error("Template introuvable");
 
-      // Deactivate old version
-      await updateDoc(doc(db, COLLECTIONS.TEMPLATES, templateId), {
-        isActive: false,
-        updatedAt: serverTimestamp(),
-      });
-
-      // Upload new file
+      // Upload new file first (idempotent, safe to retry)
       const storagePath = `templates/${Date.now()}_${file.name}`;
       const storageRef = ref(storage, storagePath);
       const uploadTask = uploadBytesResumable(storageRef, file);
@@ -167,8 +162,16 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
       });
       const fileUrl = await getDownloadURL(storageRef);
 
-      // Create new version
-      const newRef = await addDoc(collection(db, COLLECTIONS.TEMPLATES), {
+      // Atomic: deactivate old + create new version in a single batch
+      const batch = writeBatch(db);
+
+      batch.update(doc(db, COLLECTIONS.TEMPLATES, templateId), {
+        isActive: false,
+        updatedAt: serverTimestamp(),
+      });
+
+      const newRef = doc(collection(db, COLLECTIONS.TEMPLATES));
+      batch.set(newRef, {
         type: template.type,
         name: template.name,
         description: template.description,
@@ -186,6 +189,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
         updatedAt: serverTimestamp(),
       });
 
+      await batch.commit();
       return newRef.id;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur nouvelle version";

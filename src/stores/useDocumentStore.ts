@@ -131,16 +131,53 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   uploadDocument: async (file, entityType, entityId, docType, expiresAt) => {
+    const uploadId = `upload_${Date.now()}`;
     try {
       set({ error: null });
 
-      // 1. Create Firestore metadata first
+      // 1. Upload file to Storage FIRST (avoids exposing empty fileUrl)
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const storagePath = `documents/${entityType}/${entityId}/${Date.now()}_${sanitizedName}`;
+      const storageRef = ref(storage, storagePath);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      // Track upload progress
+      const uploadEntry: UploadProgress = { docId: uploadId, progress: 0, task: uploadTask };
+      set({ uploads: [...get().uploads, uploadEntry] });
+
+      const fileUrl = await new Promise<string>((resolve, reject) => {
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            set({
+              uploads: get().uploads.map((u) =>
+                u.docId === uploadId ? { ...u, progress } : u,
+              ),
+            });
+          },
+          (err) => {
+            set({
+              uploads: get().uploads.filter((u) => u.docId !== uploadId),
+              error: err.message,
+            });
+            reject(err);
+          },
+          async () => {
+            const url = await getDownloadURL(storageRef);
+            resolve(url);
+          },
+        );
+      });
+
+      // 2. Create Firestore metadata WITH the URL (no empty fileUrl exposed)
+      set({ uploads: get().uploads.filter((u) => u.docId !== uploadId) });
       const docRef = await addDoc(collection(db, COLLECTIONS.DOCUMENTS), {
         entityType,
         entityId,
         type: docType,
         fileName: file.name,
-        fileUrl: "", // Will be updated after upload
+        fileUrl,
         status: "uploaded",
         expiresAt: expiresAt ? Timestamp.fromDate(expiresAt) : null,
         validatedBy: null,
@@ -150,46 +187,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         updatedAt: serverTimestamp(),
       });
 
-      // 2. Upload file to Storage
-      const storagePath = `documents/${entityType}/${entityId}/${docRef.id}_${file.name}`;
-      const storageRef = ref(storage, storagePath);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      // Track upload progress
-      const uploadEntry: UploadProgress = { docId: docRef.id, progress: 0, task: uploadTask };
-      set({ uploads: [...get().uploads, uploadEntry] });
-
-      return new Promise<string>((resolve, reject) => {
-        uploadTask.on(
-          "state_changed",
-          (snapshot) => {
-            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-            set({
-              uploads: get().uploads.map((u) =>
-                u.docId === docRef.id ? { ...u, progress } : u,
-              ),
-            });
-          },
-          (err) => {
-            set({
-              uploads: get().uploads.filter((u) => u.docId !== docRef.id),
-              error: err.message,
-            });
-            reject(err);
-          },
-          async () => {
-            // Upload complete — get URL and update Firestore
-            const fileUrl = await getDownloadURL(storageRef);
-            await updateDoc(doc(db, COLLECTIONS.DOCUMENTS, docRef.id), {
-              fileUrl,
-              updatedAt: serverTimestamp(),
-            });
-            set({ uploads: get().uploads.filter((u) => u.docId !== docRef.id) });
-            resolve(docRef.id);
-          },
-        );
-      });
+      return docRef.id;
     } catch (err) {
+      set({ uploads: get().uploads.filter((u) => u.docId !== uploadId) });
       const msg = err instanceof Error ? err.message : "Erreur upload document";
       set({ error: msg });
       throw err;

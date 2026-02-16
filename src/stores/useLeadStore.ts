@@ -177,15 +177,18 @@ export const useLeadStore = create<LeadState>((set, get) => ({
   },
 
   updateStatus: async (id, status, notes) => {
-    // Validate transition
+    // Validate transition — require entity to be loaded
     const lead = get().leads.find((l) => l.id === id);
-    if (lead) {
-      const allowed = LEAD_TRANSITIONS[lead.status] ?? [];
-      if (!allowed.includes(status)) {
-        const msg = `Transition invalide : ${lead.status} → ${status}`;
-        set({ error: msg });
-        throw new Error(msg);
-      }
+    if (!lead) {
+      const msg = "Lead introuvable — impossible de valider la transition.";
+      set({ error: msg });
+      throw new Error(msg);
+    }
+    const allowed = LEAD_TRANSITIONS[lead.status] ?? [];
+    if (!allowed.includes(status)) {
+      const msg = `Transition invalide : ${lead.status} → ${status}`;
+      set({ error: msg });
+      throw new Error(msg);
     }
 
     const updates: Record<string, unknown> = { status, updatedAt: serverTimestamp() };

@@ -18,13 +18,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  collection,
+  doc,
+  writeBatch,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { COLLECTIONS } from "@/lib/config";
+import {
   useLeadStore,
   useFilteredLeads,
   useLeadCounts,
   useBreachedLeads,
 } from "@/stores/useLeadStore";
-import { usePartnerStore } from "@/stores/usePartnerStore";
-import { useOperatorStore } from "@/stores/useOperatorStore";
+import { usePartnerStore, initPartnerPipeline } from "@/stores/usePartnerStore";
+import { useOperatorStore, initOperatorPipeline } from "@/stores/useOperatorStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { LEAD_STATUS_CONFIG, LEAD_TRANSITIONS } from "@/lib/config";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -115,9 +124,8 @@ const columns: Column<Lead>[] = [
 // ─── Lead Detail Panel ────────────────────────────────
 
 function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
-  const { updateStatus, convertLead, rejectLead } = useLeadStore();
-  const { createPartner } = usePartnerStore();
-  const { createOperator } = useOperatorStore();
+  const { updateStatus, rejectLead } = useLeadStore();
+  const { user } = useAuthStore();
   const [notes, setNotes] = useState(lead.qualificationNotes ?? "");
   const [rejectReason, setRejectReason] = useState("");
   const [showReject, setShowReject] = useState(false);
@@ -131,9 +139,12 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
     setConverting(true);
     setConvertError(null);
     try {
-      let entityId: string;
+      // C1: Atomic conversion — batch write creates entity + updates lead in one transaction
+      const batch = writeBatch(db);
+
       if (lead.type === "partner") {
-        entityId = await createPartner({
+        const entityRef = doc(collection(db, COLLECTIONS.PARTNERS));
+        batch.set(entityRef, {
           userId: null,
           name: lead.golfName ?? `${lead.firstName} ${lead.lastName}`,
           siret: "",
@@ -144,15 +155,26 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
           contactPhone: lead.phone,
           contactRole: "",
           status: "onboarding",
+          currentStageKey: "pre_qualification",
+          pipelineProgress: initPartnerPipeline(),
           eligibility: {
             triphase: null, waterAccess: null, surfaceAvailable: null,
             truckAccess: null, pluCompatible: null, outsideCoastalBand: null,
             abfZone: null, directionApproval: null,
           },
           leadId: lead.id,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        batch.update(doc(db, COLLECTIONS.LEADS, lead.id), {
+          status: "converted",
+          convertedEntityId: entityRef.id,
+          updatedAt: serverTimestamp(),
         });
       } else {
-        entityId = await createOperator({
+        const entityRef = doc(collection(db, COLLECTIONS.OPERATORS));
+        batch.set(entityRef, {
           userId: "",
           firstName: lead.firstName,
           lastName: lead.lastName,
@@ -160,10 +182,22 @@ function LeadDetail({ lead, onClose }: { lead: Lead; onClose: () => void }) {
           email: lead.email,
           phone: lead.phone,
           status: "onboarding",
+          currentStageKey: "pre_qualification",
+          pipelineProgress: initOperatorPipeline(),
+          assignedSites: [],
           leadId: lead.id,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        batch.update(doc(db, COLLECTIONS.LEADS, lead.id), {
+          status: "converted",
+          convertedEntityId: entityRef.id,
+          updatedAt: serverTimestamp(),
         });
       }
-      await convertLead(lead.id, entityId);
+
+      await batch.commit();
       setShowConvert(false);
       onClose();
     } catch (err) {
