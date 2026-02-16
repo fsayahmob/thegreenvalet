@@ -233,6 +233,14 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
 // ─── Selectors ────────────────────────────────────────
 
+export function useEntityDocuments(entityType: EntityType, entityId: string) {
+  const documents = useDocumentStore((s) => s.documents);
+  return useMemo(
+    () => documents.filter((d) => d.entityType === entityType && d.entityId === entityId),
+    [documents, entityType, entityId],
+  );
+}
+
 export function useFilteredDocuments() {
   const documents = useDocumentStore((s) => s.documents);
   const filters = useDocumentStore((s) => s.filters);

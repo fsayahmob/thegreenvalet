@@ -37,6 +37,7 @@ function docToTemplate(id: string, d: Record<string, unknown>): DocumentTemplate
     entityType: (d.entityType as EntityType | "all") ?? "all",
     fileUrl: (d.fileUrl as string) ?? "",
     fileName: (d.fileName as string) ?? "",
+    content: d.content as string | undefined,
     mergeFields: (d.mergeFields as MergeFieldDefinition[]) ?? [],
     yousignTemplateId: d.yousignTemplateId as string | undefined,
     signerRoles: d.signerRoles as string[] | undefined,
@@ -213,3 +214,8 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 }));
+
+/** Get the active template for a given type */
+export function getActiveTemplateByType(type: TemplateType): DocumentTemplate | undefined {
+  return useTemplateStore.getState().templates.find((t) => t.type === type && t.isActive);
+}

@@ -358,6 +358,7 @@ export interface DocumentTemplate {
   entityType: EntityType | "all";
   fileUrl: string;
   fileName: string;
+  content?: string; // HTML content with {{merge_field}} placeholders
   mergeFields: MergeFieldDefinition[];
   yousignTemplateId?: string;
   signerRoles?: string[];

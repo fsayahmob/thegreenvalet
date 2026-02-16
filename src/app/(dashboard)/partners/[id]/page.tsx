@@ -5,11 +5,18 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { usePartnerStore } from "@/stores/usePartnerStore";
+import { useDocumentStore, useEntityDocuments } from "@/stores/useDocumentStore";
+import { useTemplateStore } from "@/stores/useTemplateStore";
 import { ENTITY_STATUS_CONFIG } from "@/lib/config";
 import { PARTNER_PIPELINE } from "@/lib/types";
 import type { GolfEligibility } from "@/lib/types";
+import { isStageDocumentsComplete, getStageDocCounts } from "@/lib/pipeline-helpers";
+import { buildMergeContext } from "@/lib/merge-engine";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PipelineTimeline } from "@/components/shared/PipelineTimeline";
+import { StageDocumentChecklist } from "@/components/shared/StageDocumentChecklist";
+import { EntityInfoForm } from "@/components/shared/EntityInfoForm";
+import { DocumentGenerator } from "@/components/shared/DocumentGenerator";
 
 // ─── Eligibility display ──────────────────────────────
 
@@ -50,26 +57,43 @@ function EligibilityChecklist({ eligibility, onUpdate }: { eligibility: GolfElig
 
 // ─── Page ─────────────────────────────────────────────
 
+type TabKey = "pipeline" | "documents" | "eligibility" | "info";
+
 export default function PartnerDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const partners = usePartnerStore((s) => s.partners);
   const loading = usePartnerStore((s) => s.loading);
   const advanceStage = usePartnerStore((s) => s.advanceStage);
+  const updatePartner = usePartnerStore((s) => s.updatePartner);
   const updateEligibility = usePartnerStore((s) => s.updateEligibility);
-  const [activeTab, setActiveTab] = useState<"pipeline" | "eligibility" | "info">("pipeline");
+  const [activeTab, setActiveTab] = useState<TabKey>("documents");
+  const [generatorOpen, setGeneratorOpen] = useState(false);
+
+  const entityDocs = useEntityDocuments("partner", id);
+  const templates = useTemplateStore((s) => s.templates);
+  const conventionTemplate = templates.find((t) => t.type === "convention" && t.isActive);
 
   useEffect(() => {
-    const unsub = usePartnerStore.getState().subscribe();
-    return unsub;
+    const u1 = usePartnerStore.getState().subscribe();
+    const u2 = useDocumentStore.getState().subscribe();
+    const u3 = useTemplateStore.getState().subscribe();
+    return () => { u1(); u2(); u3(); };
   }, []);
 
   const partner = partners.find((p) => p.id === id);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+      <div className="space-y-4 animate-slide-up">
+        <div className="skeleton h-8 w-48" />
+        <div className="skeleton h-4 w-32" />
+        <div className="grid grid-cols-3 gap-4 mt-6">
+          <div className="skeleton h-16 rounded-lg" />
+          <div className="skeleton h-16 rounded-lg" />
+          <div className="skeleton h-16 rounded-lg" />
+        </div>
+        <div className="skeleton h-64 rounded-xl mt-6" />
       </div>
     );
   }
@@ -84,11 +108,36 @@ export default function PartnerDetailPage() {
   }
 
   const statusCfg = ENTITY_STATUS_CONFIG[partner.status];
-  const tabs = [
-    { key: "pipeline" as const, label: "Pipeline" },
-    { key: "eligibility" as const, label: "Éligibilité" },
-    { key: "info" as const, label: "Informations" },
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: "pipeline", label: "Pipeline" },
+    { key: "documents", label: "Documents" },
+    { key: "eligibility", label: "Éligibilité" },
+    { key: "info", label: "Informations" },
   ];
+
+  // Auto-advance helper: when a doc is approved, check if stage is complete
+  function handleDocApproved(stageKey: string) {
+    if (!partner) return;
+    const stage = PARTNER_PIPELINE.find((s) => s.key === stageKey);
+    if (!stage) return;
+    const progress = partner.pipelineProgress.find((p) => p.stageKey === stageKey);
+    if (progress?.status !== "in_progress") return;
+    if (isStageDocumentsComplete(stage, entityDocs)) {
+      advanceStage(partner.id, stageKey);
+    }
+  }
+
+  // Build partner data for EntityInfoForm
+  const partnerData: Record<string, string> = {
+    name: partner.name,
+    siret: partner.siret,
+    address: partner.address,
+    city: partner.city,
+    contactName: partner.contactName,
+    contactEmail: partner.contactEmail,
+    contactPhone: partner.contactPhone,
+    contactRole: partner.contactRole,
+  };
 
   return (
     <div>
@@ -144,49 +193,91 @@ export default function PartnerDetailPage() {
       </div>
 
       {/* Tab content */}
-      <div className="rounded-xl border border-border bg-white p-6">
-        {activeTab === "pipeline" && (
+      {activeTab === "pipeline" && (
+        <div className="rounded-xl border border-border bg-white p-6">
           <PipelineTimeline
             stages={PARTNER_PIPELINE}
             progress={partner.pipelineProgress}
+            stageDocCounts={getStageDocCounts(PARTNER_PIPELINE, entityDocs)}
             onStageClick={(stageKey, status) => {
               if (status === "in_progress" || status === "waiting_external") {
                 advanceStage(partner.id, stageKey);
               }
             }}
           />
-        )}
+        </div>
+      )}
 
-        {activeTab === "eligibility" && (
+      {activeTab === "documents" && (
+        <div className="space-y-3">
+          {PARTNER_PIPELINE.map((stage) => {
+            const progress = partner.pipelineProgress.find((p) => p.stageKey === stage.key);
+            const stageStatus = progress?.status ?? "locked";
+            return (
+              <StageDocumentChecklist
+                key={stage.key}
+                stage={stage}
+                stageStatus={stageStatus}
+                entityType="partner"
+                entityId={partner.id}
+                documents={entityDocs}
+                defaultOpen={stageStatus === "in_progress"}
+                onGenerateDocument={() => {
+                  if (stage.requiresYousign && conventionTemplate) {
+                    setGeneratorOpen(true);
+                  } else {
+                    handleDocApproved(stage.key);
+                  }
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Document Generator */}
+      {conventionTemplate && partner && (
+        <DocumentGenerator
+          open={generatorOpen}
+          onClose={() => setGeneratorOpen(false)}
+          template={conventionTemplate}
+          entityType="partner"
+          entityId={partner.id}
+          context={buildMergeContext("partner", partner as unknown as Record<string, unknown>)}
+          onGenerated={() => handleDocApproved("convention_signed")}
+        />
+      )}
+
+      {activeTab === "eligibility" && (
+        <div className="rounded-xl border border-border bg-white p-6">
           <EligibilityChecklist
             eligibility={partner.eligibility}
             onUpdate={(e) => updateEligibility(partner.id, e)}
           />
-        )}
+        </div>
+      )}
 
-        {activeTab === "info" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-charcoal-500">Adresse</p>
-                <p className="font-medium text-charcoal-900">{partner.address || "—"}</p>
-              </div>
-              <div>
-                <p className="text-charcoal-500">SIRET</p>
-                <p className="font-medium text-charcoal-900">{partner.siret || "—"}</p>
-              </div>
-              <div>
-                <p className="text-charcoal-500">Lead source</p>
-                <p className="font-medium text-charcoal-900">{partner.leadId ? `Lead #${partner.leadId.slice(0, 8)}` : "Création manuelle"}</p>
-              </div>
-              <div>
-                <p className="text-charcoal-500">Créé le</p>
-                <p className="font-medium text-charcoal-900">{new Date(partner.createdAt).toLocaleDateString("fr-FR")}</p>
-              </div>
+      {activeTab === "info" && (
+        <div className="rounded-xl border border-border bg-white p-6">
+          <EntityInfoForm
+            entityType="partner"
+            data={partnerData}
+            onSave={async (data) => {
+              await updatePartner(partner.id, data);
+            }}
+          />
+          <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-charcoal-500">Lead source</p>
+              <p className="font-medium text-charcoal-900">{partner.leadId ? `Lead #${partner.leadId.slice(0, 8)}` : "Création manuelle"}</p>
+            </div>
+            <div>
+              <p className="text-charcoal-500">Créé le</p>
+              <p className="font-medium text-charcoal-900">{new Date(partner.createdAt).toLocaleDateString("fr-FR")}</p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,6 +11,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  updateDoc,
+  doc,
   query,
   where,
   serverTimestamp,
@@ -21,6 +23,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { COLLECTIONS, SLA } from "@/lib/config";
 import { SEED_TEMPLATES, SEED_LEADS } from "@/lib/seed-data";
 import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -30,6 +33,11 @@ export default function SettingsPage() {
     leads: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Template content seed state
+  const [seedingContent, setSeedingContent] = useState(false);
+  const [contentResult, setContentResult] = useState<number | null>(null);
+  const [contentError, setContentError] = useState<string | null>(null);
 
   async function handleSeed() {
     setSeeding(true);
@@ -53,6 +61,7 @@ export default function SettingsPage() {
             description: tpl.description,
             entityType: tpl.entityType,
             mergeFields: tpl.mergeFields,
+            content: tpl.content ?? "",
             isActive: true,
             isPublic: tpl.isPublic,
             version: 1,
@@ -97,6 +106,41 @@ export default function SettingsPage() {
       setError(err instanceof Error ? err.message : "Erreur lors du seed");
     } finally {
       setSeeding(false);
+    }
+  }
+
+  async function handleSeedContent() {
+    setSeedingContent(true);
+    setContentError(null);
+    setContentResult(null);
+
+    try {
+      let updated = 0;
+      const templatesWithContent = SEED_TEMPLATES.filter((t) => t.content);
+
+      for (const tpl of templatesWithContent) {
+        // Find existing template by type
+        const snap = await getDocs(
+          query(
+            collection(db, COLLECTIONS.TEMPLATES),
+            where("type", "==", tpl.type),
+            where("isActive", "==", true),
+          ),
+        );
+        for (const d of snap.docs) {
+          await updateDoc(doc(db, COLLECTIONS.TEMPLATES, d.id), {
+            content: tpl.content,
+            updatedAt: serverTimestamp(),
+          });
+          updated++;
+        }
+      }
+
+      setContentResult(updated);
+    } catch (err) {
+      setContentError(err instanceof Error ? err.message : "Erreur lors du seed contenu");
+    } finally {
+      setSeedingContent(false);
     }
   }
 
@@ -162,6 +206,65 @@ export default function SettingsPage() {
                   className="mt-0.5 text-red-600 shrink-0"
                 />
                 <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Seed Template Content Section */}
+      <div className="rounded-xl border border-border bg-white p-6 max-w-lg mt-6">
+        <div className="flex items-start gap-4">
+          <div className="rounded-lg bg-blue-50 p-2.5">
+            <FileText size={20} className="text-blue-700" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base font-semibold text-charcoal-900">
+              Seed contenu templates
+            </h2>
+            <p className="mt-1 text-sm text-charcoal-500">
+              Écrit le contenu HTML (Convention + CGV) dans les templates
+              existants en Firestore. Nécessaire pour la génération de documents.
+            </p>
+
+            <Button
+              className="mt-4"
+              variant="outline"
+              onClick={handleSeedContent}
+              disabled={seedingContent}
+            >
+              {seedingContent ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Écriture…
+                </>
+              ) : (
+                <>
+                  <FileText size={16} /> Écrire le contenu
+                </>
+              )}
+            </Button>
+
+            {contentResult !== null && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
+                <CheckCircle2
+                  size={16}
+                  className="mt-0.5 text-green-600 shrink-0"
+                />
+                <p className="text-sm text-green-800">
+                  {contentResult > 0
+                    ? `${contentResult} template${contentResult > 1 ? "s" : ""} mis à jour avec le contenu HTML.`
+                    : "Aucun template trouvé à mettre à jour. Lancez d'abord le seed initial."}
+                </p>
+              </div>
+            )}
+
+            {contentError && (
+              <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+                <AlertTriangle
+                  size={16}
+                  className="mt-0.5 text-red-600 shrink-0"
+                />
+                <p className="text-sm text-red-800">{contentError}</p>
               </div>
             )}
           </div>

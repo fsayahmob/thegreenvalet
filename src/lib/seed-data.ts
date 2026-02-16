@@ -1,4 +1,5 @@
 import type { MergeFieldDefinition, TemplateType, EntityType } from "@/lib/types";
+import { CONVENTION_HTML, CGV_HTML } from "./template-content";
 
 // ─── Seed Templates ─────────────────────────────────
 
@@ -9,6 +10,7 @@ export interface SeedTemplate {
   entityType: EntityType | "all";
   isPublic: boolean;
   mergeFields: MergeFieldDefinition[];
+  content?: string;
 }
 
 export const SEED_TEMPLATES: SeedTemplate[] = [
@@ -32,6 +34,7 @@ export const SEED_TEMPLATES: SeedTemplate[] = [
       { key: "end_date", label: "Date de fin", source: "convention.endDate", type: "date", required: true },
       { key: "duration_months", label: "Durée (mois)", source: "convention.durationMonths", type: "number", required: true },
     ],
+    content: CONVENTION_HTML,
   },
   {
     type: "cgv",
@@ -46,6 +49,7 @@ export const SEED_TEMPLATES: SeedTemplate[] = [
       { key: "commission_rate", label: "Taux de commission (%)", source: "cgv.commissionRate", type: "number", required: true },
       { key: "effective_date", label: "Date d'effet", source: "cgv.effectiveDate", type: "date", required: true },
     ],
+    content: CGV_HTML,
   },
   {
     type: "cgu",

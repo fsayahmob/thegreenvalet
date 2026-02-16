@@ -25,6 +25,7 @@ interface PipelineTimelineProps {
   progress: PipelineProgress[];
   onStageClick?: (stageKey: string, currentStatus: PipelineStageStatus) => void;
   compact?: boolean;
+  stageDocCounts?: Record<string, { approved: number; total: number }>;
 }
 
 function getStageStatus(stageKey: string, progress: PipelineProgress[]): PipelineStageStatus {
@@ -32,7 +33,7 @@ function getStageStatus(stageKey: string, progress: PipelineProgress[]): Pipelin
   return p?.status ?? "locked";
 }
 
-export function PipelineTimeline({ stages, progress, onStageClick, compact }: PipelineTimelineProps) {
+export function PipelineTimeline({ stages, progress, onStageClick, compact, stageDocCounts }: PipelineTimelineProps) {
   const sorted = [...stages].sort((a, b) => a.order - b.order);
 
   return (
@@ -84,6 +85,16 @@ export function PipelineTimeline({ stages, progress, onStageClick, compact }: Pi
                 {stage.requiresYousign && (
                   <span className="text-[10px] text-purple-600 bg-purple-50 rounded px-1.5 py-0.5">
                     e-signature
+                  </span>
+                )}
+                {stageDocCounts?.[stage.key] && stageDocCounts[stage.key].total > 0 && (
+                  <span className={cn(
+                    "text-[10px] rounded px-1.5 py-0.5",
+                    stageDocCounts[stage.key].approved === stageDocCounts[stage.key].total
+                      ? "bg-green-100 text-green-700"
+                      : "bg-charcoal-100 text-charcoal-500",
+                  )}>
+                    {stageDocCounts[stage.key].approved}/{stageDocCounts[stage.key].total} docs
                   </span>
                 )}
               </div>
