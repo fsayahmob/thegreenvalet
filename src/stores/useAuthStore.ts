@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import {
   signInWithEmailAndPassword,
-  signInWithRedirect,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
@@ -70,9 +70,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithGoogle: async () => {
     set({ loading: true, error: null });
     try {
-      authLog("signInWithGoogle: starting redirect");
+      authLog("signInWithGoogle: starting popup");
       const provider = new GoogleAuthProvider();
-      await signInWithRedirect(getFirebaseAuth(), provider);
+      const result = await signInWithPopup(getFirebaseAuth(), provider);
+      authLog("signInWithGoogle: popup success", result.user.email);
+      // onAuthStateChanged will handle setting user + role
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erreur de connexion Google";
