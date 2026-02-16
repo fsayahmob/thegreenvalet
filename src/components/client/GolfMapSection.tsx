@@ -68,10 +68,16 @@ function GolfDot({
 }) {
   const x = golf.mapX;
   const y = golf.mapY;
-  const ttW = golf.name.length * 1.5 + 3;
-  const ttH = 5;
-  const ttX = x - ttW / 2;
-  const ttY = y - ttH - 3;
+  const r = golf.active ? 2 : 1.3;
+
+  /* Tooltip sizing — clamp within viewBox 392–432 × 389–423 */
+  const label = golf.name;
+  const ttW = label.length * 1.35 + 5;
+  const ttH = 5.5;
+  const rawTtX = x - ttW / 2;
+  const ttX = Math.max(392.5, Math.min(rawTtX, 431.5 - ttW));
+  const fitsAbove = y - ttH - 4 >= 389;
+  const ttY = fitsAbove ? y - ttH - 3 : y + 3.5;
 
   return (
     <g
@@ -83,28 +89,50 @@ function GolfDot({
       onFocus={onHover}
       onBlur={onLeave}
       onClick={onClick}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className="cursor-pointer outline-none"
     >
+      {/* Hover glow */}
+      {isHovered && (
+        <circle
+          cx={x}
+          cy={y}
+          r={r + 2}
+          className={golf.active ? "fill-green-500/10" : "fill-charcoal-200/30"}
+        />
+      )}
+
+      {/* Active pulse */}
       {golf.active && (
         <circle
           cx={x}
           cy={y}
-          r={2.2}
+          r={3}
           className="fill-green-500/20 animate-ping"
           style={{ transformOrigin: `${x}px ${y}px` }}
         />
       )}
+
+      {/* Dot */}
       <circle
         cx={x}
         cy={y}
-        r={golf.active ? 1.5 : 1}
+        r={isHovered ? r + 0.5 : r}
         className={
           golf.active
-            ? "fill-green-600 stroke-white stroke-[0.4]"
-            : "fill-charcoal-300 stroke-white stroke-[0.3]"
+            ? "fill-green-600 stroke-white stroke-[0.5]"
+            : isHovered
+              ? "fill-charcoal-500 stroke-white stroke-[0.4]"
+              : "fill-charcoal-300 stroke-white stroke-[0.3]"
         }
       />
+
+      {/* Tooltip */}
       {isHovered && (
         <g>
           <rect
@@ -115,18 +143,25 @@ function GolfDot({
             rx={1}
             className="fill-charcoal-900"
           />
-          <polygon
-            points={`${x - 1},${ttY + ttH} ${x + 1},${ttY + ttH} ${x},${ttY + ttH + 1.2}`}
-            className="fill-charcoal-900"
-          />
+          {fitsAbove ? (
+            <polygon
+              points={`${x - 1},${ttY + ttH} ${x + 1},${ttY + ttH} ${x},${ttY + ttH + 1.3}`}
+              className="fill-charcoal-900"
+            />
+          ) : (
+            <polygon
+              points={`${x - 1},${ttY} ${x + 1},${ttY} ${x},${ttY - 1.3}`}
+              className="fill-charcoal-900"
+            />
+          )}
           <text
-            x={x}
-            y={ttY + 3.5}
+            x={ttX + ttW / 2}
+            y={ttY + 3.6}
             textAnchor="middle"
             className="fill-white font-medium"
-            fontSize="2.5"
+            fontSize="2.2"
           >
-            {golf.name}
+            {label}
           </text>
         </g>
       )}
@@ -160,15 +195,30 @@ export function GolfMapSection() {
                 role="img"
                 aria-label="Carte des golfs The Green Valet en France"
               >
-                <rect x="392" y="389" width="40" height="34" fill="#f8fbff" />
+                <rect x="392" y="389" width="40" height="34" fill="#fafcfa" />
 
-                {allCountryKeys.map((key) => (
+                {/* Neighboring countries — muted */}
+                {allCountryKeys
+                  .filter((k) => k !== "france" && k !== "corsica")
+                  .map((key) => (
+                    <path
+                      key={key}
+                      d={paths[key]}
+                      fill="#f3f3f3"
+                      stroke="#dcdcdc"
+                      strokeWidth={0.2}
+                      strokeLinejoin="round"
+                    />
+                  ))}
+
+                {/* France + Corsica — highlighted */}
+                {(["france", "corsica"] as const).map((key) => (
                   <path
                     key={key}
                     d={paths[key]}
-                    fill="#efefef"
-                    stroke="#d4d4d4"
-                    strokeWidth={0.25}
+                    fill="#eaefea"
+                    stroke="#b5c4b9"
+                    strokeWidth={0.4}
                     strokeLinejoin="round"
                   />
                 ))}
@@ -176,24 +226,53 @@ export function GolfMapSection() {
                 <text
                   x="410"
                   y="408"
-                  fontSize="2.2"
-                  fill="#a3a3a3"
-                  fontWeight="600"
+                  fontSize="2"
+                  fill="#c5c5c5"
+                  fontWeight="500"
                   textAnchor="middle"
+                  letterSpacing={0.3}
                 >
                   FRANCE
                 </text>
 
-                {golfLocations.map((golf, i) => (
+                {/* Dots — non-hovered first for z-order */}
+                {golfLocations.map(
+                  (golf, i) =>
+                    hoveredIdx !== i && (
+                      <GolfDot
+                        key={golf.slug}
+                        golf={golf}
+                        isHovered={false}
+                        onHover={() => setHoveredIdx(i)}
+                        onLeave={() => setHoveredIdx(null)}
+                        onClick={() =>
+                          router.push(
+                            golf.active
+                              ? `/golfs/${golf.slug}`
+                              : "/golf#simulator",
+                          )
+                        }
+                      />
+                    ),
+                )}
+
+                {/* Hovered dot — rendered last (on top) */}
+                {hoveredIdx !== null && (
                   <GolfDot
-                    key={golf.slug}
-                    golf={golf}
-                    isHovered={hoveredIdx === i}
-                    onHover={() => setHoveredIdx(i)}
+                    key={`hover-${golfLocations[hoveredIdx].slug}`}
+                    golf={golfLocations[hoveredIdx]}
+                    isHovered
+                    onHover={() => setHoveredIdx(hoveredIdx)}
                     onLeave={() => setHoveredIdx(null)}
-                    onClick={() => router.push(golf.active ? `/golfs/${golf.slug}` : "/golf#simulator")}
+                    onClick={() =>
+                      router.push(
+                        golfLocations[hoveredIdx].active
+                          ? `/golfs/${golfLocations[hoveredIdx].slug}`
+                          : "/golf#simulator",
+                      )
+                    }
                   />
-                ))}
+                )}
               </svg>
             </div>
           </div>
