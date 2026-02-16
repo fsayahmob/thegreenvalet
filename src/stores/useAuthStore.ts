@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import {
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
@@ -58,17 +58,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ loading: true, error: null });
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged will handle setting user + role
+      await signInWithRedirect(auth, provider);
+      // Page will redirect to Google, then back — onAuthStateChanged handles the rest
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Erreur de connexion Google";
       set({
         loading: false,
-        error: message.includes("popup-closed")
-          ? "Connexion annulée"
-          : "Erreur de connexion Google. Réessayez.",
+        error: "Erreur de connexion Google. Réessayez.",
       });
+      console.error("[auth] signInWithGoogle error:", message);
     }
   },
 
