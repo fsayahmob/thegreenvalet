@@ -14,26 +14,18 @@ interface SlideOverProps {
 
 export function SlideOver({ open, onClose, title, subtitle, children, wide = false }: SlideOverProps) {
   const [visible, setVisible] = useState(false);
-  const [closing, setClosing] = useState(false);
+
+  // Derive closing state — no separate useState needed
+  const closing = visible && !open;
+
+  // Adjust visible during render when open becomes true (React-recommended pattern)
+  if (open && !visible) {
+    setVisible(true);
+  }
 
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);
-
-  // Handle open/close transitions
-  useEffect(() => {
-    if (open) {
-      setVisible(true);
-      setClosing(false);
-    } else if (visible) {
-      setClosing(true);
-      const timer = setTimeout(() => {
-        setVisible(false);
-        setClosing(false);
-      }, 300); // matches --duration-slow
-      return () => clearTimeout(timer);
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Lock body scroll
   useEffect(() => {
@@ -71,6 +63,7 @@ export function SlideOver({ open, onClose, title, subtitle, children, wide = fal
           wide ? "w-full max-w-2xl" : "w-full max-w-md"
         } ${closing ? "animate-slide-out-r" : "animate-slide-in-r"}`}
         style={{ boxShadow: "var(--shadow-xl)" }}
+        onAnimationEnd={() => { if (closing) setVisible(false); }}
       >
         {/* Header */}
         <div className="flex items-start justify-between border-b border-border px-6 py-4">

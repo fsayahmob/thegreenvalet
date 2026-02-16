@@ -122,6 +122,7 @@ export const usePartnerStore = create<PartnerState>((set, get) => ({
   updatePartner: async (id, data) => {
     try {
       set({ error: null });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _id, createdAt: _ca, ...rest } = data as Record<string, unknown>;
       await updateDoc(doc(db, COLLECTIONS.PARTNERS, id), { ...rest, updatedAt: serverTimestamp() });
     } catch (err) {

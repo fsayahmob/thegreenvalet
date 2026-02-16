@@ -55,23 +55,24 @@ export function Sidebar() {
   const { sidebarOpen, setSidebarOpen } = useLayoutStore();
   const role = useAuthStore((s) => s.role);
 
-  // Animation states for mobile overlay
+  // Animation state for mobile overlay
   const [visible, setVisible] = useState(false);
-  const [closing, setClosing] = useState(false);
 
+  // Derive closing state
+  const closing = visible && !sidebarOpen;
+
+  // Adjust visible during render when sidebarOpen becomes true (React-recommended pattern)
+  if (sidebarOpen && !visible) {
+    setVisible(true);
+  }
+
+  // Lock body scroll on mobile when sidebar is open
   useEffect(() => {
-    if (sidebarOpen) {
-      setVisible(true);
-      setClosing(false);
-    } else if (visible) {
-      setClosing(true);
-      const timer = setTimeout(() => {
-        setVisible(false);
-        setClosing(false);
-      }, 300); // matches --duration-slow
-      return () => clearTimeout(timer);
+    if (visible) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
     }
-  }, [sidebarOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Filter nav items based on role
   const allowedHrefs = (() => {
@@ -168,6 +169,7 @@ export function Sidebar() {
               closing ? "animate-slide-out-l" : "animate-slide-in-l"
             }`}
             style={{ boxShadow: "var(--shadow-xl)" }}
+            onAnimationEnd={() => { if (closing) setVisible(false); }}
           >
             {sidebarContent}
           </aside>

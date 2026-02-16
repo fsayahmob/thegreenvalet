@@ -28,25 +28,18 @@ export function ConfirmDialog({
   children,
 }: ConfirmDialogProps) {
   const [visible, setVisible] = useState(false);
-  const [closing, setClosing] = useState(false);
+
+  // Derive closing state — no separate useState needed
+  const closing = visible && !open;
+
+  // Adjust visible during render when open becomes true (React-recommended pattern)
+  if (open && !visible) {
+    setVisible(true);
+  }
 
   const handleClose = useCallback(() => {
     if (!loading) onClose();
   }, [onClose, loading]);
-
-  useEffect(() => {
-    if (open) {
-      setVisible(true);
-      setClosing(false);
-    } else if (visible) {
-      setClosing(true);
-      const timer = setTimeout(() => {
-        setVisible(false);
-        setClosing(false);
-      }, 200); // matches --duration-normal
-      return () => clearTimeout(timer);
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (visible) {
@@ -84,6 +77,7 @@ export function ConfirmDialog({
           closing ? "animate-scale-out" : "animate-scale-in"
         }`}
         style={{ boxShadow: "var(--shadow-xl)" }}
+        onAnimationEnd={() => { if (closing) setVisible(false); }}
       >
         <div className="flex items-start justify-between">
           <h3 className="text-lg font-semibold text-charcoal-900">{title}</h3>

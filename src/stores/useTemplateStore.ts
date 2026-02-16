@@ -136,6 +136,7 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   updateTemplate: async (id, data) => {
     try {
       set({ error: null });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _, createdAt: __, ...rest } = data as Record<string, unknown>;
       await updateDoc(doc(db, COLLECTIONS.TEMPLATES, id), {
         ...rest,

@@ -117,6 +117,7 @@ export const useOperatorStore = create<OperatorState>((set, get) => ({
   updateOperator: async (id, data) => {
     try {
       set({ error: null });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _id, createdAt: _ca, ...rest } = data as Record<string, unknown>;
       await updateDoc(doc(db, COLLECTIONS.OPERATORS, id), { ...rest, updatedAt: serverTimestamp() });
     } catch (err) {
