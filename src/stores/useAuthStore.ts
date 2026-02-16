@@ -87,26 +87,43 @@ export const useAuthStore = create<AuthState>((set) => ({
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Fetch role from Firestore /users/{uid}
-        try {
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-          const data = userDoc.data();
-          set({
-            user: firebaseUser,
-            role: (data?.role as UserRole) ?? null,
-            displayName:
-              data?.displayName ?? firebaseUser.displayName ?? firebaseUser.email,
-            loading: false,
-            error: null,
-          });
-        } catch {
-          // User doc might not exist yet — default to null role
-          set({
-            user: firebaseUser,
-            role: null,
-            displayName: firebaseUser.displayName ?? firebaseUser.email,
-            loading: false,
-          });
-        }
+        // Cloud Function onUserCreate may not have run yet — retry once
+        const fetchRole = async (
+          attempt: number,
+        ): Promise<{ role: UserRole | null; displayName: string | null }> => {
+          try {
+            const userDoc = await getDoc(
+              doc(db, "users", firebaseUser.uid),
+            );
+            const data = userDoc.data();
+            if (!data && attempt < 2) {
+              await new Promise((r) => setTimeout(r, 2000));
+              return fetchRole(attempt + 1);
+            }
+            return {
+              role: (data?.role as UserRole) ?? null,
+              displayName:
+                data?.displayName ??
+                firebaseUser.displayName ??
+                firebaseUser.email,
+            };
+          } catch {
+            return {
+              role: null,
+              displayName:
+                firebaseUser.displayName ?? firebaseUser.email,
+            };
+          }
+        };
+
+        const result = await fetchRole(0);
+        set({
+          user: firebaseUser,
+          role: result.role,
+          displayName: result.displayName,
+          loading: false,
+          error: null,
+        });
       } else {
         set({
           user: null,
