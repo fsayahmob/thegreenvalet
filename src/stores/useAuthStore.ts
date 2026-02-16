@@ -3,6 +3,8 @@
 import { create } from "zustand";
 import {
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   type User,
@@ -20,6 +22,7 @@ interface AuthState {
 
   // Actions
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
   initAuth: () => () => void; // returns unsubscribe fn
@@ -47,6 +50,24 @@ export const useAuthStore = create<AuthState>((set) => ({
           : message.includes("too-many-requests")
             ? "Trop de tentatives. Réessayez plus tard."
             : "Erreur de connexion. Vérifiez vos identifiants.",
+      });
+    }
+  },
+
+  signInWithGoogle: async () => {
+    set({ loading: true, error: null });
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle setting user + role
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Erreur de connexion Google";
+      set({
+        loading: false,
+        error: message.includes("popup-closed")
+          ? "Connexion annulée"
+          : "Erreur de connexion Google. Réessayez.",
       });
     }
   },
