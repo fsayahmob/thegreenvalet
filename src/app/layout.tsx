@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://thegreenvalet.fr"),
+  metadataBase: new URL("https://thegreenvalet.com"),
   title: "The Green Valet — Lavage vapeur éco-responsable sur les golfs",
   description:
     "Le premier service de lavage vapeur intégré aux golfs. Zéro investissement, zéro contrainte, 100% image premium pour votre club.",

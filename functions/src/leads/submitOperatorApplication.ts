@@ -31,7 +31,7 @@ function ensureString(val: unknown, name: string, maxLen = MAX_TEXT): string {
  * Creates a Lead document in Firestore with type "operator".
  */
 export const submitOperatorApplication = onCall<OperatorApplicationData>(
-  { region: "europe-west1", cors: [/thegreenvalet\.fr$/, /localhost/] },
+  { region: "europe-west1", cors: [/thegreenvalet\.(fr|com)$/, /localhost/] },
   async (request) => {
     const data = request.data;
 
