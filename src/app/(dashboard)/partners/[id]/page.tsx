@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePartnerStore } from "@/stores/usePartnerStore";
 import { useDocumentStore, useEntityDocuments } from "@/stores/useDocumentStore";
 import { useTemplateStore } from "@/stores/useTemplateStore";
+import { useYousignStore } from "@/stores/useYousignStore";
 import { ENTITY_STATUS_CONFIG } from "@/lib/config";
 import { PARTNER_PIPELINE } from "@/lib/types";
 import type { GolfEligibility } from "@/lib/types";
@@ -78,8 +79,9 @@ export default function PartnerDetailPage() {
     const u1 = usePartnerStore.getState().subscribe();
     const u2 = useDocumentStore.getState().subscribe();
     const u3 = useTemplateStore.getState().subscribe();
-    return () => { u1(); u2(); u3(); };
-  }, []);
+    const u4 = useYousignStore.getState().subscribe("partner", id);
+    return () => { u1(); u2(); u3(); u4(); };
+  }, [id]);
 
   const partner = partners.find((p) => p.id === id);
 
@@ -246,6 +248,7 @@ export default function PartnerDetailPage() {
           entityId={partner.id}
           context={buildMergeContext("partner", partner as unknown as Record<string, unknown>)}
           onGenerated={() => handleDocApproved("convention_signed")}
+          requiresSignature
         />
       )}
 

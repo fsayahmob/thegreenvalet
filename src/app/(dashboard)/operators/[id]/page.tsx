@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useOperatorStore } from "@/stores/useOperatorStore";
 import { useDocumentStore, useEntityDocuments } from "@/stores/useDocumentStore";
 import { useTemplateStore } from "@/stores/useTemplateStore";
+import { useYousignStore } from "@/stores/useYousignStore";
 import { ENTITY_STATUS_CONFIG } from "@/lib/config";
 import { OPERATOR_PIPELINE } from "@/lib/types";
 import { isStageDocumentsComplete, getStageDocCounts } from "@/lib/pipeline-helpers";
@@ -41,8 +42,9 @@ export default function OperatorDetailPage() {
     const u1 = useOperatorStore.getState().subscribe();
     const u2 = useDocumentStore.getState().subscribe();
     const u3 = useTemplateStore.getState().subscribe();
-    return () => { u1(); u2(); u3(); };
-  }, []);
+    const u4 = useYousignStore.getState().subscribe("operator", id);
+    return () => { u1(); u2(); u3(); u4(); };
+  }, [id]);
 
   const operator = operators.find((o) => o.id === id);
 
@@ -204,6 +206,7 @@ export default function OperatorDetailPage() {
           entityId={operator.id}
           context={buildMergeContext("operator", operator as unknown as Record<string, unknown>)}
           onGenerated={() => handleDocApproved("cgv_signed")}
+          requiresSignature
         />
       )}
       {charteTemplate && operator && (
@@ -215,6 +218,7 @@ export default function OperatorDetailPage() {
           entityId={operator.id}
           context={buildMergeContext("operator", operator as unknown as Record<string, unknown>)}
           onGenerated={() => handleDocApproved("charte_decharge")}
+          requiresSignature
         />
       )}
       {dechargeTemplate && operator && (
@@ -226,6 +230,7 @@ export default function OperatorDetailPage() {
           entityId={operator.id}
           context={buildMergeContext("operator", operator as unknown as Record<string, unknown>)}
           onGenerated={() => handleDocApproved("charte_decharge")}
+          requiresSignature
         />
       )}
 

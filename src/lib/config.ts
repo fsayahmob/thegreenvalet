@@ -72,3 +72,12 @@ export const PIPELINE_STATUS_CONFIG: Record<string, { label: string; color: Stat
   completed: { label: "Terminé", color: "green" },
   skipped: { label: "Ignoré", color: "gray" },
 };
+
+export const YOUSIGN_STATUS_CONFIG: Record<string, { label: string; color: StatusColor }> = {
+  draft: { label: "Brouillon", color: "gray" },
+  activated: { label: "En attente signature", color: "blue" },
+  done: { label: "Signé", color: "green" },
+  expired: { label: "Expiré", color: "red" },
+  declined: { label: "Refusé", color: "red" },
+  canceled: { label: "Annulé", color: "gray" },
+};

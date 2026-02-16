@@ -14,8 +14,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { DocumentUploader } from "./DocumentUploader";
 import { StatusBadge } from "./StatusBadge";
+import { SignatureStatusBadge } from "./SignatureStatusBadge";
 import { useDocumentStore } from "@/stores/useDocumentStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useYousignStore } from "@/stores/useYousignStore";
 import { getStageDocumentStatus, isStageDocumentsComplete } from "@/lib/pipeline-helpers";
 import type { PipelineStage, PipelineStageStatus, AppDocument, EntityType } from "@/lib/types";
 import type { StageDocStatus } from "@/lib/pipeline-helpers";
@@ -73,6 +75,14 @@ function DocRow({
   const isPending = docStatus.status === "uploaded" || docStatus.status === "under_review";
   const isApproved = docStatus.status === "approved";
 
+  // Check if this document is being handled via Yousign
+  const yousignRequestId = docStatus.document?.yousignRequestId;
+  const yousignRequests = useYousignStore((s) => s.requests);
+  const yousignRequest = yousignRequestId
+    ? yousignRequests.find((r) => r.yousignRequestId === yousignRequestId)
+    : undefined;
+  const hasYousign = !!yousignRequest;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3 py-2">
@@ -80,6 +90,7 @@ function DocRow({
         <span
           className={`h-2.5 w-2.5 rounded-full shrink-0 ${
             isApproved ? "bg-green-500" :
+            hasYousign ? "bg-blue-500" :
             isPending ? "bg-amber-500" :
             isRejected ? "bg-red-500" :
             "bg-charcoal-300"
@@ -92,14 +103,16 @@ function DocRow({
           {docStatus.required && <span className="text-red-400 ml-0.5">*</span>}
         </span>
 
-        {/* Status badge */}
-        {!isMissing && (
+        {/* Status badge — show Yousign badge if applicable, else normal doc status */}
+        {hasYousign ? (
+          <SignatureStatusBadge status={yousignRequest.yousignStatus} />
+        ) : !isMissing ? (
           <StatusBadge
             label={docStatusLabel(docStatus.status)}
             color={docStatusColor(docStatus.status)}
             pulse={false}
           />
-        )}
+        ) : null}
 
         {/* Actions */}
         <div className="flex items-center gap-1.5">
@@ -116,8 +129,8 @@ function DocRow({
             </a>
           )}
 
-          {/* Approve / Reject (for pending docs) */}
-          {isPending && uid && (
+          {/* Approve / Reject (for pending docs — not if Yousign is managing it) */}
+          {isPending && uid && !hasYousign && (
             <>
               <Button
                 size="sm"
